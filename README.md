@@ -5,11 +5,12 @@ fully navigable in the browser with pan, zoom, and text search.
 
 ## Features
 
-- 🔍 **Search**: quickly find cities, rivers, steddings, and other points of interest.
-- 🖱️ **Zoom & Pan**: explore the map using scroll, drag, or pinch (on mobile).
-- 🎨 **Borders Toggle**: show or hide nation borders.
-- 💾 **Local Storage**: saves and restores zoom, position, and border visibility automatically.
-- 📱 **Responsive**: optimized for both desktop and mobile.
+- **Search**: quickly find cities, rivers, steddings, and other points of interest.
+- **Zoom & Pan**: explore the map using scroll, drag, or pinch (on mobile).
+- **Borders Toggle**: show or hide nation borders.
+- **Local Storage**: saves and restores zoom, position, and border visibility automatically.
+- **Responsive**: optimized for both desktop and mobile.
+- **PWA**: Progressive Web App support.
 
 ## Keyboard Shortcuts
 
