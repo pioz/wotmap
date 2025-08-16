@@ -585,7 +585,11 @@
         img.addEventListener('dragstart', (e) => e.preventDefault())
 
         // Initialize after the image loads so we know natural dimensions
-        img.addEventListener('load', mapLoaded)
+        if (img.complete) {
+          mapLoaded()
+        } else {
+          img.addEventListener('load', mapLoaded)
+        }
 
         img.addEventListener('error', () => {
           alert('Fail to load the image map.')
