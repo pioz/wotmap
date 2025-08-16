@@ -2,11 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover, user-scalable=no" />
     <meta name="author" content="pioz" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="manifest" href="manifest.json">
     <title>The Wheel of Time Map</title>
     <style>
       :root {
@@ -96,6 +95,15 @@
         transition: none;
       }
 
+      .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: block;
+        pointer-events: none;
+        background-color: transparent;
+      }
+
       .hint {
         display: flex;
         align-items: center;
@@ -129,15 +137,6 @@
         -webkit-user-drag: none;
         display: block;
       }
-
-      #overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        display: block;
-        pointer-events: none;
-        background-color: transparent;
-      }
     </style>
   </head>
 
@@ -161,8 +160,8 @@
 
       <div id="viewport" class="viewport">
         <div id="content" class="content">
-          <img id="map" src="map.v1.jpg" alt="Map" />
-          <canvas id="overlay"></canvas>
+          <img id="map" src="map.v1.jpg" alt="Map" fetchpriority="high" decoding="async" />
+          <svg class="overlay" id="nation-borders-overlay"></svg>
         </div>
       </div>
     </div>
@@ -186,8 +185,7 @@
         const viewport = document.getElementById('viewport')
         const content = document.getElementById('content')
         const img = document.getElementById('map')
-        const canvas = document.getElementById('overlay')
-        const ctx = canvas.getContext('2d')
+        const nationBordersSvg = document.getElementById('nation-borders-overlay')
         const loader = document.getElementById('loader')
 
         // Controls
@@ -205,8 +203,6 @@
         let translateY = 0 // pan Y in pixels
         let showBorders = false // toggle state
 
-        let lastDrawnZoom = null
-
         // Events
         ///////////////////////////////////////////////////////////////////////
 
@@ -223,7 +219,6 @@
 
         const poi = window.poi
         const nations = poi.nations
-        cacheNationBorderPaths(nations) // Calculate border paths only one time
         const locations = poi.locations.concat(poi.rivers).concat(poi.steddings)
 
         // LocalStorage state
@@ -257,10 +252,8 @@
         ///////////////////////////////////////////////////////////////////////
 
         function applyTransform() {
-          // Apply pan & zoom to the shared container so image and canvas move together
+          // Apply pan & zoom to the shared container so image and overlays move together
           content.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoom})`
-          // Redraw borders for crispness at new transform only if visible
-          if (showBorders && lastDrawnZoom !== zoom) drawBorders()
         }
 
         // Move/Zoom map functions
@@ -394,7 +387,7 @@
 
         function toggleBorders() {
           showBorders = !showBorders
-          drawBorders()
+          setBordersVisible(showBorders)
           saveState()
         }
 
@@ -402,92 +395,67 @@
           if (!localStorage.getItem(STORAGE_KEY)) {
             setCenterOnPoint(EMONDS_FIELD_X, EMONDS_FIELD_Y, DEFAULT_ZOOM)
           }
+          renderNationBorders(nations)
+          setBordersVisible(showBorders)
           applyTransform()
-
           loader.style.display = 'none'
         }
 
         // Nation Borders
         ///////////////////////////////////////////////////////////////////////
 
-        // HiDPI-aware resize: keep CSS size in native image pixels; buffer scaled by DPR
-        function resizeCanvasToDisplaySize(canvas) {
-          const dpr = window.devicePixelRatio || 1
-          canvas.style.width = img.naturalWidth + 'px'
-          canvas.style.height = img.naturalHeight + 'px'
-          const cssW = img.naturalWidth
-          const cssH = img.naturalHeight
-          const maxCanvasSize = getMaxCanvasSize()
-          const scaleFactor = Math.min(maxCanvasSize / cssW, maxCanvasSize / cssH, 1)
-          const canvasW = Math.round(cssW * dpr * scaleFactor)
-          const canvasH = Math.round(cssH * dpr * scaleFactor)
-          const needResize = canvas.width !== canvasW || canvas.height !== canvasH
-          if (needResize) {
-            canvas.width = canvasW
-            canvas.height = canvasH
-          }
-          // map 1 CSS pixel to (dpr*scaleFactor) device pixels
-          ctx.setTransform(dpr * scaleFactor, 0, 0, dpr * scaleFactor, 0, 0)
-          return dpr
+        function sizeSvgToImage(svg) {
+          // Set intrinsic size and viewBox to match the image's native pixels
+          const w = img.naturalWidth
+          const h = img.naturalHeight
+          svg.setAttribute('width', w)
+          svg.setAttribute('height', h)
+          svg.setAttribute('viewBox', `0 0 ${w} ${h}`)
+          // For layout: ensure the CSS box matches the image size so it overlaps perfectly
+          svg.style.width = w + 'px'
+          svg.style.height = h + 'px'
         }
 
-        // Save the border path in the nation object
-        function cacheNationBorderPaths(nations) {
-          for (const nation of nations) {
-            if (typeof nation.border !== 'string' || !nation.border.trim()) continue
-            try {
-              nation.borderPath = new Path2D(nation.border)
-            } catch (e) {
-              console.warn('Invalid SVG path', nation.border, e)
-              continue
-            }
-          }
-        }
+        function renderNationBorders(nations, {
+          strokeWidth = 6,
+          strokeOpacity = 0.85,
+          fill = true,
+          fillOpacity = 0.2,
+          defaultColor = 'rgb(255,0,0)'
+        } = {}) {
+          sizeSvgToImage(nationBordersSvg)
+          // Clear previous content
+          while (nationBordersSvg.firstChild) nationBordersSvg.removeChild(nationBordersSvg.firstChild);
 
-        function drawNationBorders(ctx, nations, opts) {
-          const {
-            lineWidth = 2,
-            opacity = 1.0,
-            fill = true,
-            fillOpacity = 0.5,
-            defaultColor = 'rgb(255,0,0)'
-          } = opts || {}
-          ctx.save()
-          ctx.lineJoin = 'round'
-          ctx.lineCap = 'round'
-          ctx.miterLimit = 2 // slightly tighter to avoid spikes
-          ctx.lineWidth = lineWidth
+          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          g.setAttribute('fill-rule', 'evenodd');
+          g.setAttribute('stroke-linejoin', 'round');
+          g.setAttribute('stroke-linecap', 'round');
+          g.setAttribute('stroke-miterlimit', '2');
+
           for (const nation of nations) {
-            const color = nation.color || defaultColor
-            const path = nation.borderPath
-            if (!path) continue
+            if (typeof nation.border !== 'string' || !nation.border.trim()) continue;
+            const color = nation.color || defaultColor;
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', nation.border);
+            // Stroke
+            path.setAttribute('stroke', color);
+            path.setAttribute('stroke-width', String(strokeWidth));
+            path.setAttribute('stroke-opacity', String(strokeOpacity));
+            // Fill
             if (fill) {
-              ctx.globalAlpha = fillOpacity
-              ctx.fillStyle = color
-              ctx.fill(path)
+              path.setAttribute('fill', color);
+              path.setAttribute('fill-opacity', String(fillOpacity));
+            } else {
+              path.setAttribute('fill', 'none');
             }
-            ctx.globalAlpha = opacity
-            ctx.strokeStyle = color
-            ctx.stroke(path)
+            g.appendChild(path);
           }
-          ctx.globalAlpha = 1
-          ctx.restore()
+          nationBordersSvg.appendChild(g);
         }
 
-        function drawBorders() {
-          // Ensure canvas matches the native map size (CSS) and DPR buffer size
-          resizeCanvasToDisplaySize(canvas)
-          // Clear back to transparent and redraw
-          ctx.clearRect(0, 0, canvas.width, canvas.height)
-          if (!showBorders) return
-          if (!nations.length) return
-          drawNationBorders(ctx, nations, {
-            lineWidth: 6,
-            opacity: 0.85,
-            fill: true,
-            fillOpacity: 0.2
-          })
-          lastDrawnZoom = zoom
+        function setBordersVisible(visible) {
+          nationBordersSvg.style.display = visible ? 'block' : 'none';
         }
 
         // Utils
@@ -501,24 +469,6 @@
           const dx = touches[0].clientX - touches[1].clientX
           const dy = touches[0].clientY - touches[1].clientY
           return Math.sqrt(dx * dx + dy * dy)
-        }
-
-        let _maxCanvasSize = null
-        function getMaxCanvasSize() {
-          if (_maxCanvasSize != null) return _maxCanvasSize
-
-          const dpr = window.devicePixelRatio || 1
-          // Base estimate: take the largest screen side in physical pixels
-          let screenMax = 4096 // fallback
-          if (window.screen) {
-            screenMax = Math.max(screen.width, screen.height) * dpr * 2
-          }
-          // Device-specific cap: iOS is usually limited to 4096, others can go up to 8192
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-          const deviceLimit = isIOS ? 4096 : 8192
-          // Choose the safest lower bound
-          _maxCanvasSize = Math.min(screenMax, deviceLimit)
-          return _maxCanvasSize
         }
 
         // Init
