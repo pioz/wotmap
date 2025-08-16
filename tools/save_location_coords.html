@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <title>Annotatore mappa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body { height: 100%; margin: 0; background:#0b0d12; color:#e7ebf0; font-family:sans-serif; }
+    .toolbar { display:flex; align-items:center; gap:.75rem; padding:.75rem 1rem; border-bottom:1px solid #1c2533; background:#0f1320; position:sticky; top:0; z-index:10; }
+    .toolbar h1 { margin:0; font-size:1rem; font-weight:600; color:#c7d0dc; }
+    .spacer { flex:1; }
+    button { border:1px solid #2a3850; background:#1a2333; color:#e7ebf0; padding:.5rem .8rem; border-radius:.6rem; cursor:pointer; font-weight:600; }
+    button:hover { background:#222d42; }
+    .viewport { position:relative; width:100%; height:calc(100vh - 56px); overflow:hidden; touch-action:none; background:#0b0d12; }
+    #imgWrapper { position:absolute; left:0; top:0; will-change:transform; user-select:none; transform:translate(0,0); }
+    #mapImage { display:block; max-width:none; max-height:none; user-select:none; pointer-events:none; }
+    .marker { position:absolute; width:14px; height:14px; border-radius:50%; background:#43d9a3; border:2px solid #0b0d12; transform:translate(-50%,-50%); }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>Annotatore mappa</h1>
+    <div class="spacer"></div>
+    <button id="downloadBtn">Scarica JSON</button>
+  </div>
+
+  <div id="viewport" class="viewport">
+    <div id="imgWrapper">
+      <img id="mapImage" src="../map.jpg" alt="Mappa" />
+    </div>
+  </div>
+
+  <script>
+    const viewport = document.getElementById('viewport');
+    const imgWrapper = document.getElementById('imgWrapper');
+    const img = document.getElementById('mapImage');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let naturalW = 0, naturalH = 0;
+    let panX = 0, panY = 0;
+    let isDown = false, moved = false, startX = 0, startY = 0, panStartX = 0, panStartY = 0;
+    const CLICK_MOVE_THRESHOLD = 4;
+
+    // Carica annotazioni dal LocalStorage
+    let annotations = JSON.parse(localStorage.getItem('annotations') || '[]');
+
+    function applyPan() {
+      imgWrapper.style.transform = `translate(${panX}px, ${panY}px)`;
+    }
+
+    function getImageClientRect() {
+      return img.getBoundingClientRect();
+    }
+
+    function clientToImageCoords(clientX, clientY) {
+      const rect = getImageClientRect();
+      if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return null;
+      const xOnRendered = clientX - rect.left;
+      const yOnRendered = clientY - rect.top;
+      const scaleX = naturalW / rect.width;
+      const scaleY = naturalH / rect.height;
+      return { imgX: Math.round(xOnRendered * scaleX), imgY: Math.round(yOnRendered * scaleY) };
+    }
+
+    function addMarkerAt(imgX, imgY) {
+      const rect = getImageClientRect();
+      const renderX = (imgX / naturalW) * rect.width;
+      const renderY = (imgY / naturalH) * rect.height;
+      const dot = document.createElement('div');
+      dot.className = 'marker';
+      dot.style.left = `${renderX}px`;
+      dot.style.top = `${renderY}px`;
+      imgWrapper.appendChild(dot);
+    }
+
+    function saveAnnotations() {
+      localStorage.setItem('annotations', JSON.stringify(annotations));
+    }
+
+    function downloadJSON() {
+      const blob = new Blob([JSON.stringify(annotations, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'annotations.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    viewport.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      isDown = true; moved = false;
+      startX = e.clientX; startY = e.clientY;
+      panStartX = panX; panStartY = panY;
+      viewport.setPointerCapture(e.pointerId);
+    });
+
+    viewport.addEventListener('pointermove', e => {
+      if (!isDown) return;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if (!moved && Math.hypot(dx,dy) >= CLICK_MOVE_THRESHOLD) moved = true;
+      if (moved) { panX = panStartX + dx; panY = panStartY + dy; applyPan(); }
+    });
+
+    viewport.addEventListener('pointerup', e => {
+      isDown = false;
+      viewport.releasePointerCapture(e.pointerId);
+      if (!moved) {
+        const pos = clientToImageCoords(e.clientX, e.clientY);
+        if (!pos) return;
+        const label = prompt(`Etichetta per (${pos.imgX}, ${pos.imgY}):`);
+        if (label) {
+          annotations.push({ coord: [pos.imgX, pos.imgY], label: label.trim() });
+          saveAnnotations();
+          addMarkerAt(pos.imgX, pos.imgY);
+        }
+      }
+    });
+
+    img.addEventListener('load', () => {
+      naturalW = img.naturalWidth;
+      naturalH = img.naturalHeight;
+      imgWrapper.style.width = naturalW + 'px';
+      imgWrapper.style.height = naturalH + 'px';
+      applyPan();
+      // Ricrea i marker dalle annotazioni salvate
+      annotations.forEach(a => addMarkerAt(a.coord[0], a.coord[1]));
+    });
+
+    downloadBtn.addEventListener('click', downloadJSON);
+  </script>
+</body>
+</html>

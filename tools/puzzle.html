@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tile Puzzle Helper</title>
+  <style>
+    /* --- Basic Layout & Aesthetics --- */
+    :root {
+      --tile-size: 256px;
+      --gap: 4px;
+      --bg: #0b0c10;
+      --fg: #e8e8e8;
+      --muted: #a5a5a5;
+      --accent: #4da3ff;
+      --danger: #ff6565;
+    }
+
+    html, body { height: 100%; }
+
+    /* fix overflow calcs and avoid surprise horizontal scrollbars */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--fg);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    header, footer {
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    footer { border-top: 1px solid rgba(255,255,255,0.06); border-bottom: none; }
+
+    h1 { margin: 0 0 6px 0; font-size: 18px; letter-spacing: .4px; }
+
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .btn {
+      padding: 8px 12px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06); color: var(--fg);
+      cursor: pointer; transition: transform .05s ease; user-select: none;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { border-color: rgba(77,163,255,.5); background: rgba(77,163,255,.15); }
+    .btn.danger { border-color: rgba(255,101,101,.4); background: rgba(255,101,101,.12); }
+
+    /* ---- Two fixed columns: left tray, right grid ---- */
+    main {
+      display: grid;
+      grid-template-columns: 360px 1fr; /* hard split: left pane fixed width, right fills */
+      gap: 10px;
+      min-height: 0;
+    }
+
+    /* --- Left: To-Check Tray (independent scroll) --- */
+    .tray {
+      display: grid;
+      grid-template-rows: auto 1fr; /* header + scrollable list */
+      gap: 10px;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 10px;
+      min-height: 0;
+      min-width: 0; /* prevents intrinsic overflow */
+    }
+    .tray .list {
+      min-height: 0;
+      overflow-y: auto;   /* vertical scroll only */
+      overflow-x: hidden; /* hide unexpected horizontal scroll */
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      padding-bottom: 10px;
+    }
+
+    .thumb {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #0f1116; /* darker tile well */
+      border: 1px dashed rgba(255,255,255,0.15);
+      border-radius: 8px;
+      position: relative;
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;       /* avoid cropping thumbnails */
+      /* crisper downscaled tiles */
+      image-rendering: optimizeSpeed;            /* legacy */
+      image-rendering: -moz-crisp-edges;        /* Firefox */
+      image-rendering: crisp-edges;             /* CSS4 draft */
+      image-rendering: pixelated;               /* Chrome/Edge */
+      display: block;
+      backface-visibility: hidden;
+      transform: translateZ(0);
+    }
+    .thumb .label { position: absolute; left: 6px; bottom: 6px; background: rgba(0,0,0,0.55); padding: 2px 6px; border-radius: 6px; font-size: 12px; color: var(--fg); pointer-events: none; max-width: calc(100% - 12px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* --- Right: Grid Pane (own header + independent scroller) --- */
+    .right-pane {
+      display: grid;
+      grid-template-rows: auto 1fr; /* sticky-ish header + scroller */
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .scroller {
+      overflow: auto;           /* independent scroll container */
+      height: 100%;
+      min-height: 0;
+      padding: 10px;
+      touch-action: none;       /* improves pointer panning on touch/trackpads */
+    }
+    .scroller.panning { cursor: grabbing; user-select: none; }
+    .scroller.panning * { cursor: grabbing !important; }
+
+    .grid {
+      display: grid;
+      grid-auto-rows: var(--tile-size);
+      gap: var(--gap);
+      background: #111318;
+      padding: var(--gap);
+      border-radius: 12px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;
+      position: relative;
+      width: max-content;   /* expand to content width */
+      height: max-content;  /* expand to content height */
+    }
+
+    .cell { width: var(--tile-size); height: var(--tile-size); background: #ffffff; position: relative; border-radius: 4px; overflow: hidden; outline: 1px dashed rgba(0,0,0,0.1); }
+    .cell.locked { outline: 1px solid rgba(0,0,0,0.1); }
+    .cell img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+    .cell .coords { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.55); color: #fff; font-size: 12px; padding: 2px 6px; border-radius: 6px; pointer-events: none; }
+    .drop-hint { position: absolute; inset: 0; display: grid; place-items: center; color: #666; font-size: 13px; font-weight: 600; background: repeating-linear-gradient(45deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px); }
+
+    .chip { position: absolute; right: 6px; top: 6px; background: rgba(255,255,255,0.8); color: #111; font-size: 12px; padding: 0 6px; border-radius: 10px; line-height: 20px; }
+
+    .remove { position: absolute; right: 6px; bottom: 6px; background: var(--danger); color: white; border: none; border-radius: 10px; font-size: 12px; padding: 2px 6px; cursor: pointer; }
+
+    details { opacity: .9; }
+    summary { cursor: pointer; }
+    code, kbd { background: rgba(255,255,255,0.07); padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tile Puzzle Helper</h1>
+    <div class="toolbar">
+      <button id="btn-reload" class="btn">Reload folders</button>
+      <button id="btn-clear-placements" class="btn danger">Clear placements</button>
+      <button id="btn-download" class="btn primary">Download mapping (.txt)</button>
+      <span id="status" style="margin-left:auto; font-size:12px; color: var(--muted);"></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- LEFT: fixed-width tray -->
+    <section class="tray">
+      <div>
+        <strong>To-Check Tiles</strong>
+        <div style="font-size:12px; color: var(--muted); margin-top:4px;">
+          Drag from here into any empty white cell.
+        </div>
+      </div>
+      <div id="tray" class="list" aria-label="Tiles to place"></div>
+    </section>
+
+    <!-- RIGHT: header + independent scroller containing the grid -->
+    <section class="right-pane">
+      <div style="display:flex; gap:12px; align-items:baseline; padding: 10px 10px 0 10px;">
+        <strong>Grid</strong>
+        <div style="font-size:12px; color: var(--muted);">Cmd/Ctrl + left-drag to pan (independent)</div>
+      </div>
+      <div class="scroller" id="gridScroller">
+        <div id="grid" class="grid" role="grid" aria-label="Puzzle grid"></div>
+        <details style="margin-top:10px;">
+          <summary>How filenames map to coordinates</summary>
+          <div style="font-size:13px; color: var(--muted); margin-top:6px; line-height: 1.5;">
+            Filename format for placed tiles: <code>tile_XX_YY.jpg</code> where <code>XX</code> is X (column) and <code>YY</code> is Y (row).
+            <ul>
+              <li><code>tile_00_00.jpg</code> is the top-left cell.</li>
+              <li><code>tile_00_01.jpg</code> is immediately below the top-left cell (same X, Y+1).</li>
+            </ul>
+            Files in <code>/to_check/</code> are like <code>tile_000.jpg</code> and can be dragged to any empty cell. The exported mapping pairs the unknown tile filename with the target filename it would have under <code>/tiles/</code> (e.g., <code>tile_000.jpg -> tile_01_20.jpg</code>).
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div style="font-size:12px; color: var(--muted);">
+      Tip: Right-click a placed tile to remove it, or use the red button inside a cell.
+    </div>
+  </footer>
+
+  <script>
+    // --- Utility: zero-padding based on observed widths ---
+    const padLeft = (n, width) => String(n).padStart(width, '0');
+
+    // --- Global state ---
+    const state = {
+      tilesList: /** @type {Array<{x:number,y:number, xs:string, ys:string}>} */([]),
+      toCheckList: /** @type {Array<string>} */([]),
+      gridBounds: /** @type {{minX:number,maxX:number,minY:number,maxY:number}|null} */(null),
+      padX: 2,
+      padY: 2,
+      placements: /** @type {Record<string,{x:number,y:number}>} */({}) // key: to_check filename; value: coords
+    };
+
+    // Persist placements between reloads
+    const LS_KEY = 'tile-puzzle-placements-v1';
+
+    // --- Fetch directory listing and parse filenames ---
+    async function listFiles(path) {
+      // We rely on directory index HTML (e.g., from `ruby -run -e httpd`).
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const anchors = Array.from(doc.querySelectorAll('a'));
+      return anchors
+        .map(a => decodeURIComponent(a.getAttribute('href') || ''))
+        .filter(href => href && !href.startsWith('?') && !href.startsWith('/'));
+    }
+
+    function parseTiles(files) {
+      const re = /^tile_(\d+)_(\d+)\.(?:jpg|jpeg|png)$/i;
+      const list = [];
+      for (const name of files) {
+        const m = name.match(re);
+        if (!m) continue;
+        const xs = m[1];
+        const ys = m[2];
+        const x = parseInt(xs, 10);
+        const y = parseInt(ys, 10);
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          list.push({ x, y, xs, ys });
+        }
+      }
+      return list;
+    }
+
+    function parseToCheck(files) {
+      const re = /^tile_(\d+)\.(?:jpg|jpeg|png)$/i;
+      const list = [];
+      for (const name of files) {
+        if (re.test(name)) list.push(name);
+      }
+      return list.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    }
+
+    function computeBounds(list) {
+      if (list.length === 0) return null;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const t of list) {
+        if (t.x < minX) minX = t.x;
+        if (t.y < minY) minY = t.y;
+        if (t.x > maxX) maxX = t.x;
+        if (t.y > maxY) maxY = t.y;
+      }
+      return { minX, minY, maxX, maxY };
+    }
+
+    function restorePlacements() {
+      try { const raw = localStorage.getItem(LS_KEY); if (raw) state.placements = JSON.parse(raw); } catch {}
+    }
+    function savePlacements() { localStorage.setItem(LS_KEY, JSON.stringify(state.placements)); }
+
+    // --- Render tray ---
+    function renderTray() {
+      const tray = document.getElementById('tray');
+      tray.innerHTML = '';
+      for (const name of state.toCheckList) {
+        const placed = state.placements[name];
+        if (placed) continue;
+        const div = document.createElement('div');
+        div.className = 'thumb';
+        div.draggable = true;
+        div.dataset.name = name;
+        div.addEventListener('dragstart', onDragStartThumb);
+        const img = document.createElement('img');
+        img.alt = name;
+        img.src = `to_check/${encodeURIComponent(name)}`;
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = name;
+        div.appendChild(img);
+        div.appendChild(label);
+        tray.appendChild(div);
+      }
+    }
+
+    // --- Render grid ---
+    function renderGrid() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+
+      if (!state.gridBounds) { grid.textContent = 'No tiles found in /tiles/'; return; }
+
+      const { minX, minY, maxX, maxY } = state.gridBounds;
+      const cols = (maxX - minX + 1);
+      grid.style.gridTemplateColumns = `repeat(${cols}, var(--tile-size))`;
+
+      const fixed = new Map();
+      for (const t of state.tilesList) fixed.set(`${t.x}#${t.y}`, true);
+
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const key = `${x}#${y}`;
+          const has = fixed.has(key);
+          const cell = document.createElement('div');
+          cell.className = 'cell' + (has ? ' locked' : '');
+          cell.dataset.x = String(x);
+          cell.dataset.y = String(y);
+          cell.addEventListener('dragover', ev => { if (has) return; ev.preventDefault(); });
+          cell.addEventListener('drop', ev => onDropToCell(ev, x, y));
+          cell.addEventListener('contextmenu', ev => { ev.preventDefault(); removePlacementAt(x, y); });
+
+          const coords = document.createElement('div');
+          coords.className = 'coords';
+          coords.textContent = `(${x}, ${y})`;
+          cell.appendChild(coords);
+
+          if (has) {
+            const t = state.tilesList.find(t => t.x === x && t.y === y);
+            const img = document.createElement('img');
+            img.alt = `tile_${t.xs}_${t.ys}.jpg`;
+            img.src = `tiles/tile_${t.xs}_${t.ys}.jpg`;
+            img.draggable = false; // avoid conflicting drags while panning
+            const chip = document.createElement('div');
+            chip.className = 'chip';
+            chip.textContent = 'fixed';
+            cell.appendChild(img);
+            cell.appendChild(chip);
+          } else {
+            const hint = document.createElement('div');
+            hint.className = 'drop-hint';
+            hint.textContent = 'Drop here';
+            cell.appendChild(hint);
+            const placedName = findPlacedAt(x, y);
+            if (placedName) attachPlacementImage(cell, placedName, x, y);
+          }
+
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    function attachPlacementImage(cell, name, x, y) {
+      const hint = cell.querySelector('.drop-hint');
+      if (hint) hint.remove();
+      const img = document.createElement('img');
+      img.alt = name;
+      img.src = `to_check/${encodeURIComponent(name)}`;
+      img.draggable = false; // placed images shouldn't start a drag when panning
+      const rm = document.createElement('button');
+      rm.className = 'remove';
+      rm.textContent = 'Remove';
+      rm.addEventListener('click', e => {
+        e.stopPropagation();
+        delete state.placements[name];
+        savePlacements();
+        renderTray();
+        renderGrid();
+      });
+      cell.appendChild(img);
+      cell.appendChild(rm);
+    }
+
+    function findPlacedAt(x, y) {
+      for (const [name, pos] of Object.entries(state.placements)) {
+        if (pos.x === x && pos.y === y) return name;
+      }
+      return null;
+    }
+
+    function removePlacementAt(x, y) {
+      const name = findPlacedAt(x, y);
+      if (!name) return;
+      delete state.placements[name];
+      savePlacements();
+      renderTray();
+      renderGrid();
+    }
+
+    // --- DnD Handlers ---
+    function onDragStartThumb(ev) {
+      const name = ev.currentTarget?.dataset?.name;
+      if (!name) return;
+      ev.dataTransfer?.setData('text/plain', name);
+    }
+
+    function onDropToCell(ev, x, y) {
+      ev.preventDefault();
+      const name = ev.dataTransfer?.getData('text/plain');
+      if (!name) return;
+      const occupied = findPlacedAt(x, y);
+      if (occupied) { delete state.placements[occupied]; }
+      state.placements[name] = { x, y };
+      savePlacements();
+      renderTray();
+      renderGrid();
+    }
+
+    // --- Export mapping ---
+    function downloadMapping() {
+      if (!state.gridBounds) return;
+      const lines = [];
+      for (const [name, pos] of Object.entries(state.placements)) {
+        const xStr = padLeft(pos.x, state.padX);
+        const yStr = padLeft(pos.y, state.padY);
+        const target = `tile_${xStr}_${yStr}.jpg`;
+        lines.push(`${name} -> ${target}`);
+      }
+      const blob = new Blob([lines.join('\n') + (lines.length ? '\n' : '')], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'mapping.txt';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // --- Status helper ---
+    function setStatus(text) { document.getElementById('status').textContent = text; }
+
+    // --- Grid panning (Cmd/Ctrl + Left-Drag) on the independent scroller ---
+    function setupPan() {
+      const scroller = document.getElementById('gridScroller');
+      if (!scroller) return;
+      let isPanning = false;
+      let lastX = 0, lastY = 0, activePointerId = null;
+
+      scroller.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 || !(e.metaKey || e.ctrlKey)) return;
+        isPanning = true;
+        activePointerId = e.pointerId;
+        scroller.setPointerCapture(e.pointerId);
+        scroller.classList.add('panning');
+        lastX = e.clientX; lastY = e.clientY;
+        e.preventDefault(); // block image drag/selection
+      });
+
+      scroller.addEventListener('pointermove', (e) => {
+        if (!isPanning || e.pointerId !== activePointerId) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        scroller.scrollLeft -= dx;
+        scroller.scrollTop  -= dy;
+        lastX = e.clientX; lastY = e.clientY;
+      });
+
+      const endPan = () => {
+        if (!isPanning) return;
+        isPanning = false;
+        activePointerId = null;
+        scroller.classList.remove('panning');
+      };
+      scroller.addEventListener('pointerup', endPan);
+      scroller.addEventListener('pointercancel', endPan);
+      scroller.addEventListener('pointerleave', endPan);
+
+      // Make wheel over the grid scroll ONLY the right pane (and not the page/left list)
+      scroller.addEventListener('wheel', (e) => {
+        // Always consume the wheel on the right pane
+        e.preventDefault();
+        e.stopPropagation();
+        scroller.scrollBy({ left: e.deltaX, top: e.deltaY });
+      }, { passive: false });
+    }
+
+    // --- Main loader ---
+    async function loadAll() {
+      setStatus('Loading /tiles and /to_check ...');
+      try {
+        restorePlacements();
+        const [tilesFiles, toCheckFiles] = await Promise.all([ listFiles('tiles/'), listFiles('to_check/') ]);
+        state.tilesList = parseTiles(tilesFiles);
+        state.toCheckList = parseToCheck(toCheckFiles);
+        if (state.tilesList.length) {
+          state.padX = Math.max(2, ...state.tilesList.map(t => t.xs.length));
+          state.padY = Math.max(2, ...state.tilesList.map(t => t.ys.length));
+        } else { state.padX = state.padY = 2; }
+        state.gridBounds = computeBounds(state.tilesList);
+        renderTray();
+        renderGrid();
+        const countFixed = state.tilesList.length;
+        const countFree = state.gridBounds ? (state.gridBounds.maxX - state.gridBounds.minX + 1) * (state.gridBounds.maxY - state.gridBounds.minY + 1) - countFixed : 0;
+        setStatus(`Fixed: ${countFixed} • Free: ${countFree} • To place: ${state.toCheckList.length - Object.keys(state.placements).length}`);
+      } catch (err) {
+        console.error(err);
+        setStatus('Error: ' + (err?.message || err));
+      }
+    }
+
+    // --- Controls ---
+    document.getElementById('btn-reload').addEventListener('click', loadAll);
+    document.getElementById('btn-clear-placements').addEventListener('click', () => {
+      if (!confirm('Clear all placements?')) return;
+      state.placements = {};
+      savePlacements();
+      renderTray();
+      renderGrid();
+      setStatus('Placements cleared.');
+    });
+    document.getElementById('btn-download').addEventListener('click', downloadMapping);
+
+    // Kick off
+    setupPan();
+    loadAll();
+  </script>
+</body>
+</html>
