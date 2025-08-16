@@ -17,6 +17,7 @@ TODO
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <title>The Wheel of Time Map</title>
   <style>
     :root {
@@ -399,9 +400,7 @@ TODO
           setCenterOnPoint(EMONDS_FIELD_X, EMONDS_FIELD_Y, DEFAULT_ZOOM);
         }
         applyTransform();
-        setTimeout(() => {
-          loader.style.display = "none";
-        }, 1000);
+        loader.style.display = "none";
       }
 
       // Nation Borders
