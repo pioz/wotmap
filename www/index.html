@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="author" content="pioz">
+    <meta name="author" content="pioz" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>The Wheel of Time Map</title>
     <style>
@@ -92,6 +92,10 @@
       }
 
       .hint {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
         margin-left: auto;
         opacity: 0.8;
         font-size: 12px;
@@ -140,20 +144,14 @@
         <button id="zoomOut" class="btn" title="Zoom Out (-)">−</button>
         <button id="zoomReset" class="btn" title="Reset Zoom (0)">Reset</button>
         <button id="zoomIn" class="btn" title="Zoom In (+)">+</button>
-        <button
-          id="toggleBorders"
-          class="btn"
-          title="Toggle Nation Borders (ctrl+B)"
-        >
-          Borders
-        </button>
-        <input
-          class="input"
-          id="searchInput"
-          type="text"
-          placeholder="Search…"
-        />
-        <div class="hint">Scroll to zoom · Drag to pan</div>
+        <button id="toggleBorders" class="btn" title="Toggle Nation Borders (ctrl+B)">Borders</button>
+        <input class="input" id="searchInput" type="text" placeholder="Search…" />
+        <div class="hint">
+          Scroll to zoom · Drag to pan
+          <a class="hint" href="https://github.com/pioz/wotmap" target="_blank">
+            <img src="https://github.githubassets.com/favicons/favicon.png" alt="Contribute" height="28px" />
+          </a>
+        </div>
       </div>
 
       <div id="viewport" class="viewport">
@@ -166,64 +164,62 @@
 
     <script src="poi.js"></script>
     <script>
-      (function () {
+      ;(function () {
         // Constants
         ///////////////////////////////////////////////////////////////////////
 
-        const STORAGE_KEY = "wotmap";
-        const EMONDS_FIELD_X = 5194;
-        const EMONDS_FIELD_Y = 4114;
-        const MIN_ZOOM = 0.1; // allow zooming out to 10%
-        const MAX_ZOOM = 2; // allow zooming in to 200%
-        const DEFAULT_ZOOM = 0.8;
+        const STORAGE_KEY = 'wotmap'
+        const EMONDS_FIELD_X = 5194
+        const EMONDS_FIELD_Y = 4114
+        const MIN_ZOOM = 0.1 // allow zooming out to 10%
+        const MAX_ZOOM = 2 // allow zooming in to 200%
+        const DEFAULT_ZOOM = 0.8
 
         // Elements
         ///////////////////////////////////////////////////////////////////////
 
-        const viewport = document.getElementById("viewport");
-        const content = document.getElementById("content");
-        const img = document.getElementById("map");
-        const canvas = document.getElementById("overlay");
-        const ctx = canvas.getContext("2d");
-        const loader = document.getElementById("loader");
+        const viewport = document.getElementById('viewport')
+        const content = document.getElementById('content')
+        const img = document.getElementById('map')
+        const canvas = document.getElementById('overlay')
+        const ctx = canvas.getContext('2d')
+        const loader = document.getElementById('loader')
 
         // Controls
-        const btnIn = document.getElementById("zoomIn");
-        const btnOut = document.getElementById("zoomOut");
-        const btnReset = document.getElementById("zoomReset");
-        const btnBorders = document.getElementById("toggleBorders");
-        const searchInput = document.getElementById("searchInput");
+        const btnIn = document.getElementById('zoomIn')
+        const btnOut = document.getElementById('zoomOut')
+        const btnReset = document.getElementById('zoomReset')
+        const btnBorders = document.getElementById('toggleBorders')
+        const searchInput = document.getElementById('searchInput')
 
         // State
         ///////////////////////////////////////////////////////////////////////
 
-        let zoom = DEFAULT_ZOOM;
-        let translateX = 0; // pan X in pixels (screen space)
-        let translateY = 0; // pan Y in pixels
-        let showBorders = false; // toggle state
+        let zoom = DEFAULT_ZOOM
+        let translateX = 0 // pan X in pixels (screen space)
+        let translateY = 0 // pan Y in pixels
+        let showBorders = false // toggle state
 
-        let lastDrawnZoom = null;
+        let lastDrawnZoom = null
 
         // Events
         ///////////////////////////////////////////////////////////////////////
 
-        let dragging = false;
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let dragOriginX = 0; // translateX at drag start
-        let dragOriginY = 0; // translateY at drag start
-        let lastTouchDistance = 0;
-        let isPinching = false;
+        let dragging = false
+        let dragStartX = 0
+        let dragStartY = 0
+        let dragOriginX = 0 // translateX at drag start
+        let dragOriginY = 0 // translateY at drag start
+        let lastTouchDistance = 0
+        let isPinching = false
 
         // POI (Points of Interesting)
         ///////////////////////////////////////////////////////////////////////
 
-        const poi = window.poi;
-        const nations = poi.nations;
-        cacheNationBorderPaths(nations); // Calculate border paths only one time
-        const locations = poi.locations
-          .concat(poi.rivers)
-          .concat(poi.steddings);
+        const poi = window.poi
+        const nations = poi.nations
+        cacheNationBorderPaths(nations) // Calculate border paths only one time
+        const locations = poi.locations.concat(poi.rivers).concat(poi.steddings)
 
         // LocalStorage state
         ///////////////////////////////////////////////////////////////////////
@@ -233,25 +229,22 @@
             zoom,
             translateX,
             translateY,
-            showBorders,
-          };
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            showBorders
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
         }
 
         function loadState() {
           try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return;
-            const state = JSON.parse(raw);
-            if (typeof state.zoom === "number") zoom = state.zoom;
-            if (typeof state.translateX === "number")
-              translateX = state.translateX;
-            if (typeof state.translateY === "number")
-              translateY = state.translateY;
-            if (typeof state.showBorders === "boolean")
-              showBorders = state.showBorders;
+            const raw = localStorage.getItem(STORAGE_KEY)
+            if (!raw) return
+            const state = JSON.parse(raw)
+            if (typeof state.zoom === 'number') zoom = state.zoom
+            if (typeof state.translateX === 'number') translateX = state.translateX
+            if (typeof state.translateY === 'number') translateY = state.translateY
+            if (typeof state.showBorders === 'boolean') showBorders = state.showBorders
           } catch (e) {
-            console.warn("Invalid saved state", e);
+            console.warn('Invalid saved state', e)
           }
         }
 
@@ -260,156 +253,153 @@
 
         function applyTransform() {
           // Apply pan & zoom to the shared container so image and canvas move together
-          content.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoom})`;
+          content.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoom})`
           // Redraw borders for crispness at new transform only if visible
-          if (showBorders && lastDrawnZoom !== zoom) drawBorders();
+          if (showBorders && lastDrawnZoom !== zoom) drawBorders()
         }
 
         // Move/Zoom map functions
         ///////////////////////////////////////////////////////////////////////
 
         function setCenterOnPoint(imgX, imgY, newZoom = null) {
-          if (typeof newZoom === "number")
-            zoom = clamp(newZoom, MIN_ZOOM, MAX_ZOOM);
-          const vw = viewport.clientWidth;
-          const vh = viewport.clientHeight;
-          translateX = vw / 2 - imgX * zoom;
-          translateY = vh / 2 - imgY * zoom;
+          if (typeof newZoom === 'number') zoom = clamp(newZoom, MIN_ZOOM, MAX_ZOOM)
+          const vw = viewport.clientWidth
+          const vh = viewport.clientHeight
+          translateX = vw / 2 - imgX * zoom
+          translateY = vh / 2 - imgY * zoom
         }
 
         // Center the image in the viewport
         function setCenterAtNaturalSize() {
-          setCenterOnPoint(img.naturalWidth / 2, img.naturalHeight / 2);
+          setCenterOnPoint(img.naturalWidth / 2, img.naturalHeight / 2)
         }
 
         function zoomAt(pointX, pointY, deltaZoom) {
           // Zoom keeping (pointX, pointY) in viewport coords stationary.
-          const oldZoom = zoom;
-          const newZoom = clamp(oldZoom * deltaZoom, MIN_ZOOM, MAX_ZOOM);
-          if (newZoom === oldZoom) return;
+          const oldZoom = zoom
+          const newZoom = clamp(oldZoom * deltaZoom, MIN_ZOOM, MAX_ZOOM)
+          if (newZoom === oldZoom) return
 
-          const contentX = (pointX - translateX) / oldZoom;
-          const contentY = (pointY - translateY) / oldZoom;
+          const contentX = (pointX - translateX) / oldZoom
+          const contentY = (pointY - translateY) / oldZoom
 
-          zoom = newZoom;
-          translateX = pointX - contentX * zoom;
-          translateY = pointY - contentY * zoom;
+          zoom = newZoom
+          translateX = pointX - contentX * zoom
+          translateY = pointY - contentY * zoom
 
-          applyTransform();
-          saveState();
+          applyTransform()
+          saveState()
         }
 
         function zoomAtViewportCenter(deltaZoom) {
-          const rect = viewport.getBoundingClientRect();
-          zoomAt(rect.width / 2, rect.height / 2, deltaZoom);
+          const rect = viewport.getBoundingClientRect()
+          zoomAt(rect.width / 2, rect.height / 2, deltaZoom)
         }
 
         // Reset zoom to default without re-centering the image
         function resetZoom() {
-          zoomAtViewportCenter(DEFAULT_ZOOM / zoom);
+          zoomAtViewportCenter(DEFAULT_ZOOM / zoom)
         }
 
         // Events
         ///////////////////////////////////////////////////////////////////////
 
         function handleWheel(e) {
-          e.preventDefault();
-          const rect = viewport.getBoundingClientRect();
-          const mouseX = e.clientX - rect.left;
-          const mouseY = e.clientY - rect.top;
-          const zoomFactor = Math.pow(2, -e.deltaY / 1000); // smooth exponential zoom
-          zoomAt(mouseX, mouseY, zoomFactor);
+          e.preventDefault()
+          const rect = viewport.getBoundingClientRect()
+          const mouseX = e.clientX - rect.left
+          const mouseY = e.clientY - rect.top
+          const zoomFactor = Math.pow(2, -e.deltaY / 1000) // smooth exponential zoom
+          zoomAt(mouseX, mouseY, zoomFactor)
         }
 
         function dragStart(e) {
-          e.preventDefault();
-          moveMapStart(e.clientX, e.clientY);
+          e.preventDefault()
+          moveMapStart(e.clientX, e.clientY)
         }
 
         function touchStart(e) {
           if (e.touches.length === 1) {
             // PAN with one finger
-            moveMapStart(e.touches[0].clientX, e.touches[0].clientY);
+            moveMapStart(e.touches[0].clientX, e.touches[0].clientY)
           } else if (e.touches.length === 2) {
             // PINCH ZOOM with two fingers
-            isPinching = true;
-            dragging = false; // disable pan
-            lastTouchDistance = getTouchDistance(e.touches);
+            isPinching = true
+            dragging = false // disable pan
+            lastTouchDistance = getTouchDistance(e.touches)
           }
         }
 
         function moveMapStart(x, y) {
-          dragging = true;
-          content.classList.add("dragging");
-          dragStartX = x;
-          dragStartY = y;
-          dragOriginX = translateX;
-          dragOriginY = translateY;
-          applyTransform();
+          dragging = true
+          content.classList.add('dragging')
+          dragStartX = x
+          dragStartY = y
+          dragOriginX = translateX
+          dragOriginY = translateY
+          applyTransform()
         }
 
         function duringDrag(e) {
-          e.preventDefault();
-          duringMoveMap(e.clientX, e.clientY);
+          e.preventDefault()
+          duringMoveMap(e.clientX, e.clientY)
         }
 
         function duringTouchMove(e) {
-          e.preventDefault();
+          e.preventDefault()
           if (dragging && e.touches.length === 1) {
-            duringMoveMap(e.touches[0].clientX, e.touches[0].clientY);
+            duringMoveMap(e.touches[0].clientX, e.touches[0].clientY)
           } else if (isPinching && e.touches.length === 2) {
             // update zoom
-            const newDist = getTouchDistance(e.touches);
-            const deltaZoom = newDist / lastTouchDistance;
-            lastTouchDistance = newDist;
+            const newDist = getTouchDistance(e.touches)
+            const deltaZoom = newDist / lastTouchDistance
+            lastTouchDistance = newDist
             // center point between fingers
-            const rect = viewport.getBoundingClientRect();
-            const centerX =
-              (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-            const centerY =
-              (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-            zoomAt(centerX, centerY, deltaZoom);
+            const rect = viewport.getBoundingClientRect()
+            const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left
+            const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top
+            zoomAt(centerX, centerY, deltaZoom)
           }
         }
 
         function duringMoveMap(x, y) {
-          if (!dragging) return;
-          translateX = dragOriginX + (x - dragStartX);
-          translateY = dragOriginY + (y - dragStartY);
-          applyTransform();
+          if (!dragging) return
+          translateX = dragOriginX + (x - dragStartX)
+          translateY = dragOriginY + (y - dragStartY)
+          applyTransform()
         }
 
         function endDrag() {
-          dragging = false;
-          content.classList.remove("dragging");
-          saveState();
+          dragging = false
+          content.classList.remove('dragging')
+          saveState()
         }
 
         function touchEnd(e) {
           if (e.touches.length === 0) {
-            endDrag();
-            isPinching = false;
-            return;
+            endDrag()
+            isPinching = false
+            return
           }
           if (isPinching && e.touches.length === 1) {
-            isPinching = false;
-            moveMapStart(e.touches[0].clientX, e.touches[0].clientY);
+            isPinching = false
+            moveMapStart(e.touches[0].clientX, e.touches[0].clientY)
           }
         }
 
         function toggleBorders() {
-          showBorders = !showBorders;
-          drawBorders();
-          saveState();
+          showBorders = !showBorders
+          drawBorders()
+          saveState()
         }
 
         function mapLoaded() {
           if (!localStorage.getItem(STORAGE_KEY)) {
-            setCenterOnPoint(EMONDS_FIELD_X, EMONDS_FIELD_Y, DEFAULT_ZOOM);
+            setCenterOnPoint(EMONDS_FIELD_X, EMONDS_FIELD_Y, DEFAULT_ZOOM)
           }
-          applyTransform();
+          applyTransform()
 
-          loader.style.display = "none";
+          loader.style.display = 'none'
         }
 
         // Nation Borders
@@ -417,40 +407,34 @@
 
         // HiDPI-aware resize: keep CSS size in native image pixels; buffer scaled by DPR
         function resizeCanvasToDisplaySize(canvas) {
-          const dpr = window.devicePixelRatio || 1;
-          canvas.style.width = img.naturalWidth + "px";
-          canvas.style.height = img.naturalHeight + "px";
-          const cssW = img.naturalWidth;
-          const cssH = img.naturalHeight;
-          const maxCanvasSize = getMaxCanvasSize();
-          const scaleFactor = Math.min(
-            maxCanvasSize / cssW,
-            maxCanvasSize / cssH,
-            1,
-          );
-          const canvasW = Math.round(cssW * dpr * scaleFactor);
-          const canvasH = Math.round(cssH * dpr * scaleFactor);
-          const needResize =
-            canvas.width !== canvasW || canvas.height !== canvasH;
+          const dpr = window.devicePixelRatio || 1
+          canvas.style.width = img.naturalWidth + 'px'
+          canvas.style.height = img.naturalHeight + 'px'
+          const cssW = img.naturalWidth
+          const cssH = img.naturalHeight
+          const maxCanvasSize = getMaxCanvasSize()
+          const scaleFactor = Math.min(maxCanvasSize / cssW, maxCanvasSize / cssH, 1)
+          const canvasW = Math.round(cssW * dpr * scaleFactor)
+          const canvasH = Math.round(cssH * dpr * scaleFactor)
+          const needResize = canvas.width !== canvasW || canvas.height !== canvasH
           if (needResize) {
-            canvas.width = canvasW;
-            canvas.height = canvasH;
+            canvas.width = canvasW
+            canvas.height = canvasH
           }
           // map 1 CSS pixel to (dpr*scaleFactor) device pixels
-          ctx.setTransform(dpr * scaleFactor, 0, 0, dpr * scaleFactor, 0, 0);
-          return dpr;
+          ctx.setTransform(dpr * scaleFactor, 0, 0, dpr * scaleFactor, 0, 0)
+          return dpr
         }
 
         // Save the border path in the nation object
         function cacheNationBorderPaths(nations) {
           for (const nation of nations) {
-            if (typeof nation.border !== "string" || !nation.border.trim())
-              continue;
+            if (typeof nation.border !== 'string' || !nation.border.trim()) continue
             try {
-              nation.borderPath = new Path2D(nation.border);
+              nation.borderPath = new Path2D(nation.border)
             } catch (e) {
-              console.warn("Invalid SVG path", nation.border, e);
-              continue;
+              console.warn('Invalid SVG path', nation.border, e)
+              continue
             }
           }
         }
@@ -461,165 +445,156 @@
             opacity = 1.0,
             fill = true,
             fillOpacity = 0.5,
-            defaultColor = "rgb(255,0,0)",
-          } = opts || {};
-          ctx.save();
-          ctx.lineJoin = "round";
-          ctx.lineCap = "round";
-          ctx.miterLimit = 2; // slightly tighter to avoid spikes
-          ctx.lineWidth = lineWidth;
+            defaultColor = 'rgb(255,0,0)'
+          } = opts || {}
+          ctx.save()
+          ctx.lineJoin = 'round'
+          ctx.lineCap = 'round'
+          ctx.miterLimit = 2 // slightly tighter to avoid spikes
+          ctx.lineWidth = lineWidth
           for (const nation of nations) {
-            const color = nation.color || defaultColor;
-            const path = nation.borderPath;
-            if (!path) continue;
+            const color = nation.color || defaultColor
+            const path = nation.borderPath
+            if (!path) continue
             if (fill) {
-              ctx.globalAlpha = fillOpacity;
-              ctx.fillStyle = color;
-              ctx.fill(path);
+              ctx.globalAlpha = fillOpacity
+              ctx.fillStyle = color
+              ctx.fill(path)
             }
-            ctx.globalAlpha = opacity;
-            ctx.strokeStyle = color;
-            ctx.stroke(path);
+            ctx.globalAlpha = opacity
+            ctx.strokeStyle = color
+            ctx.stroke(path)
           }
-          ctx.globalAlpha = 1;
-          ctx.restore();
+          ctx.globalAlpha = 1
+          ctx.restore()
         }
 
         function drawBorders() {
           // Ensure canvas matches the native map size (CSS) and DPR buffer size
-          resizeCanvasToDisplaySize(canvas);
+          resizeCanvasToDisplaySize(canvas)
           // Clear back to transparent and redraw
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          if (!showBorders) return;
-          if (!nations.length) return;
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+          if (!showBorders) return
+          if (!nations.length) return
           drawNationBorders(ctx, nations, {
             lineWidth: 6,
             opacity: 0.85,
             fill: true,
-            fillOpacity: 0.2,
-          });
-          lastDrawnZoom = zoom;
+            fillOpacity: 0.2
+          })
+          lastDrawnZoom = zoom
         }
 
         // Utils
         ///////////////////////////////////////////////////////////////////////
 
         function clamp(value, min, max) {
-          return Math.max(min, Math.min(max, value));
+          return Math.max(min, Math.min(max, value))
         }
 
         function getTouchDistance(touches) {
-          const dx = touches[0].clientX - touches[1].clientX;
-          const dy = touches[0].clientY - touches[1].clientY;
-          return Math.sqrt(dx * dx + dy * dy);
+          const dx = touches[0].clientX - touches[1].clientX
+          const dy = touches[0].clientY - touches[1].clientY
+          return Math.sqrt(dx * dx + dy * dy)
         }
 
-        let _maxCanvasSize = null;
+        let _maxCanvasSize = null
         function getMaxCanvasSize() {
-          if (_maxCanvasSize != null) return _maxCanvasSize;
+          if (_maxCanvasSize != null) return _maxCanvasSize
 
-          const dpr = window.devicePixelRatio || 1;
+          const dpr = window.devicePixelRatio || 1
           // Base estimate: take the largest screen side in physical pixels
-          let screenMax = 4096; // fallback
+          let screenMax = 4096 // fallback
           if (window.screen) {
-            screenMax = Math.max(screen.width, screen.height) * dpr * 2;
+            screenMax = Math.max(screen.width, screen.height) * dpr * 2
           }
           // Device-specific cap: iOS is usually limited to 4096, others can go up to 8192
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-          const deviceLimit = isIOS ? 4096 : 8192;
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+          const deviceLimit = isIOS ? 4096 : 8192
           // Choose the safest lower bound
-          _maxCanvasSize = Math.min(screenMax, deviceLimit);
-          return _maxCanvasSize;
+          _maxCanvasSize = Math.min(screenMax, deviceLimit)
+          return _maxCanvasSize
         }
 
         // Init
         ///////////////////////////////////////////////////////////////////////
 
-        loadState();
+        loadState()
 
         // Toolbar events
-        btnIn.addEventListener("click", () => zoomAtViewportCenter(1.2));
-        btnOut.addEventListener("click", () => zoomAtViewportCenter(1 / 1.2));
-        btnReset.addEventListener("click", resetZoom);
-        btnBorders.addEventListener("click", toggleBorders);
+        btnIn.addEventListener('click', () => zoomAtViewportCenter(1.2))
+        btnOut.addEventListener('click', () => zoomAtViewportCenter(1 / 1.2))
+        btnReset.addEventListener('click', resetZoom)
+        btnBorders.addEventListener('click', toggleBorders)
 
-        searchInput.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") {
-            const query = searchInput.value
-              .trim()
-              .toLowerCase()
-              .replace(/\s+/g, "");
-            if (!query) return;
-            if (query.length < 3) return;
-            searchInput.blur();
+        searchInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            const query = searchInput.value.trim().toLowerCase().replace(/\s+/g, '')
+            if (!query) return
+            if (query.length < 3) return
+            searchInput.blur()
             // First search for perfect match
             for (const location of locations) {
-              if (
-                location.label &&
-                location.label.toLowerCase().replace(/\s+/g, "") === query
-              ) {
-                const [x, y] = location.coord;
-                setCenterOnPoint(x, y);
-                applyTransform();
-                saveState();
-                return;
+              if (location.label && location.label.toLowerCase().replace(/\s+/g, '') === query) {
+                const [x, y] = location.coord
+                setCenterOnPoint(x, y)
+                applyTransform()
+                saveState()
+                return
               }
             }
             // Then by inclusion
             for (const location of locations) {
-              if (
-                location.label &&
-                location.label.toLowerCase().replace(/\s+/g, "").includes(query)
-              ) {
-                const [x, y] = location.coord;
-                setCenterOnPoint(x, y);
-                applyTransform();
-                saveState();
-                return;
+              if (location.label && location.label.toLowerCase().replace(/\s+/g, '').includes(query)) {
+                const [x, y] = location.coord
+                setCenterOnPoint(x, y)
+                applyTransform()
+                saveState()
+                return
               }
             }
           }
-        });
+        })
 
         // Mouse events
-        viewport.addEventListener("wheel", handleWheel, { passive: false });
-        viewport.addEventListener("mousedown", dragStart);
-        window.addEventListener("mousemove", duringDrag);
-        window.addEventListener("mouseup", endDrag);
+        viewport.addEventListener('wheel', handleWheel, { passive: false })
+        viewport.addEventListener('mousedown', dragStart)
+        window.addEventListener('mousemove', duringDrag)
+        window.addEventListener('mouseup', endDrag)
 
         // Mobile events
-        viewport.addEventListener("touchstart", touchStart, { passive: false });
-        viewport.addEventListener("touchmove", duringTouchMove, {
-          passive: false,
-        });
-        viewport.addEventListener("touchend", touchEnd, { passive: false });
+        viewport.addEventListener('touchstart', touchStart, { passive: false })
+        viewport.addEventListener('touchmove', duringTouchMove, {
+          passive: false
+        })
+        viewport.addEventListener('touchend', touchEnd, { passive: false })
 
         // Recenter on resize to keep the map nicely framed (preserve current zoom and center)
-        window.addEventListener("resize", () => zoomAtViewportCenter(1));
+        window.addEventListener('resize', () => zoomAtViewportCenter(1))
 
         // Prevent native image drag ghost
-        img.addEventListener("dragstart", (e) => e.preventDefault());
+        img.addEventListener('dragstart', (e) => e.preventDefault())
 
         // Initialize after the image loads so we know natural dimensions
-        img.addEventListener("load", mapLoaded);
+        img.addEventListener('load', mapLoaded)
 
-        img.addEventListener("error", () => {
-          alert("Fail to load the image map.");
-        });
+        img.addEventListener('error', () => {
+          alert('Fail to load the image map.')
+        })
 
         // Keyboard shortcuts
-        window.addEventListener("keydown", (e) => {
-          if (e.key === "+" || e.key === "ArrowUp") btnIn.click();
-          if (e.key === "-" || e.key === "ArrowDown") btnOut.click();
-          if (e.key === "0") btnReset.click();
-          if ((e.metaKey || e.ctrlKey) && e.key === "b") btnBorders.click();
-          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
-            e.preventDefault();
-            searchInput.focus();
-            searchInput.value = "";
+        window.addEventListener('keydown', (e) => {
+          if (e.key === '+' || e.key === 'ArrowUp') btnIn.click()
+          if (e.key === '-' || e.key === 'ArrowDown') btnOut.click()
+          if (e.key === '0') btnReset.click()
+          if ((e.metaKey || e.ctrlKey) && e.key === 'b') btnBorders.click()
+          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+            e.preventDefault()
+            searchInput.focus()
+            searchInput.value = ''
           }
-        });
-      })();
+        })
+      })()
     </script>
   </body>
 </html>
