@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <meta name="author" content="pioz" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>The Wheel of Time Map</title>
@@ -11,6 +11,7 @@
         --white: #e5e7eb;
         --black: #0e1726;
         --ocean-blue: #4a7ecc;
+        --dark-black: #020618;
         --border-color: rgba(255, 255, 255, 0.12);
       }
 
@@ -72,7 +73,7 @@
       .viewport {
         position: relative;
         overflow: hidden;
-        background: var(--ocean-blue);
+        background: var(--dark-black);
         touch-action: none;
       }
 
@@ -80,6 +81,8 @@
         position: absolute;
         top: 0;
         left: 0;
+        border: 25px solid var(--border-color);
+        border-radius: 25px;
         transform-origin: 0 0; /* We'll transform this element to pan & zoom */
         will-change: transform;
         cursor: grab;
@@ -113,7 +116,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--black);
+        background: linear-gradient(var(--dark-black), var(--black));
         color: var(--white);
         font-size: 18px;
         z-index: 9999;
@@ -156,7 +159,7 @@
 
       <div id="viewport" class="viewport">
         <div id="content" class="content">
-          <img id="map" src="map.jpg" alt="Map" />
+          <img id="map" src="map.v1.jpg" alt="Map" />
           <canvas id="overlay"></canvas>
         </div>
       </div>
@@ -554,6 +557,10 @@
               }
             }
           }
+        })
+
+        searchInput.addEventListener('focus', (e) => {
+          searchInput.value = ''
         })
 
         // Mouse events

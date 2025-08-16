@@ -1,0 +1,10 @@
+{
+  "headers": [
+    {
+      "source": "/map.v1.jpg",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=7776000, immutable" }
+      ]
+    }
+  ]
+}
