@@ -479,7 +479,10 @@ window.poi = {
         8052,
         868
       ],
-      "label": "The Great Blight"
+      "label": "The Great Blight",
+      "localizations": {
+        "it": "Grande Macchia"
+      }
     },
     {
       "coord": [
@@ -507,14 +510,20 @@ window.poi = {
         9838,
         599
       ],
-      "label": "The Eye of the World"
+      "label": "The Eye of the World",
+      "localizations": {
+        "it": "L'Occhio del Mondo"
+      }
     },
     {
       "coord": [
         10447,
         717
       ],
-      "label": "The Blasted Lands"
+      "label": "The Blasted Lands",
+      "localizations": {
+        "it": "Terre Inaridite"
+      }
     },
     {
       "coord": [
@@ -528,28 +537,20 @@ window.poi = {
         9488,
         1098
       ],
-      "label": "The Seven Towers"
+      "label": "The Seven Towers",
+      "localizations": {
+        "it": "Le Sette Torri"
+      }
     },
     {
       "coord": [
         9961,
         1276
       ],
-      "label": "Tarwin's Gap"
-    },
-    {
-      "coord": [
-        14039,
-        1554
-      ],
-      "label": "Sharan Trade Town"
-    },
-    {
-      "coord": [
-        13941,
-        1971
-      ],
-      "label": "Sharan Trade Town"
+      "label": "Tarwin's Gap",
+      "localizations": {
+        "it": "Varco di Tarwin"
+      }
     },
     {
       "coord": [
@@ -871,21 +872,30 @@ window.poi = {
         4930,
         4173
       ],
-      "label": "Mountains of Mist"
+      "label": "Mountains of Mist",
+      "localizations": {
+        "it": "Montagne di Nebbia"
+      }
     },
     {
       "coord": [
         4148,
         3876
       ],
-      "label": "Almoth Plain"
+      "label": "Almoth Plain",
+      "localizations": {
+        "it": "Piana di Almoth"
+      }
     },
     {
       "coord": [
         3581,
         3813
       ],
-      "label": "Toman Head"
+      "label": "Toman Head",
+      "localizations": {
+        "it": "Capo Toman"
+      }
     },
     {
       "coord": [
@@ -1152,7 +1162,10 @@ window.poi = {
         1051,
         3324
       ],
-      "label": "Aryth Ocean"
+      "label": "Aryth Ocean",
+      "localizations": {
+        "it": "Oceano Aryth"
+      }
     },
     {
       "coord": [
@@ -1222,7 +1235,10 @@ window.poi = {
         9987,
         6477
       ],
-      "label": "Bay of Remara"
+      "label": "Bay of Remara",
+      "localizations": {
+        "it": "Baia di Remara"
+      }
     },
     {
       "coord": [
@@ -1530,7 +1546,10 @@ window.poi = {
         5581,
         4523
       ],
-      "label": "Garen's Wall"
+      "label": "Garen's Wall",
+      "localizations": {
+        "it": "Muro di Garen"
+      }
     },
     {
       "coord": [
@@ -1565,14 +1584,20 @@ window.poi = {
         6064,
         4036
       ],
-      "label": "The Tower of Genjei"
+      "label": "The Tower of Genjei",
+      "localizations": {
+        "it": "Torre di Ghenjei"
+      }
     },
     {
       "coord": [
         6336,
         4414
       ],
-      "label": "Whitebridge"
+      "label": "Whitebridge",
+      "localizations": {
+        "it": "Ponte Bianco"
+      }
     },
     {
       "coord": [
@@ -1586,7 +1611,10 @@ window.poi = {
         7331,
         4426
       ],
-      "label": "Four Kings"
+      "label": "Four Kings",
+      "localizations": {
+        "it": "I Quattro Re"
+      }
     },
     {
       "coord": [
@@ -1726,7 +1754,10 @@ window.poi = {
         7609,
         4528
       ],
-      "label": "The Black Tower"
+      "label": "The Black Tower",
+      "localizations": {
+        "it": "La Torre Nera"
+      }
     },
     {
       "coord": [
@@ -1824,13 +1855,6 @@ window.poi = {
     },
     {
       "coord": [
-        7973,
-        1244
-      ],
-      "label": "Mountains of Dhoom"
-    },
-    {
-      "coord": [
         7679,
         1239
       ],
@@ -1911,7 +1935,10 @@ window.poi = {
         7397,
         2583
       ],
-      "label": "The Black Hills"
+      "label": "The Black Hills",
+      "localizations": {
+        "it": "Colline Nere"
+      }
     },
     {
       "coord": [
@@ -1946,7 +1973,10 @@ window.poi = {
         10247,
         3991
       ],
-      "label": "Spine of the World"
+      "label": "Spine of the World",
+      "localizations": {
+        "it": "Dorsale del Mondo"
+      }
     },
     {
       "coord": [
@@ -2002,7 +2032,14 @@ window.poi = {
         11911,
         2568
       ],
-      "label": "The Aiel Waste"
+      "label": "The Aiel Waste",
+      "aliases": ["The Three-fold Land"],
+      "localizations": {
+        "it": "Deserto degli Aiel"
+      },
+      "alias_localizations": {
+        "it": ["Triplice Terra"]
+      }
     },
     {
       "coord": [
@@ -2121,7 +2158,10 @@ window.poi = {
         7781,
         7169
       ],
-      "label": "Sea of Storms"
+      "label": "Sea of Storms",
+      "localizations": {
+        "it": "Mare delle Tempeste"
+      }
     }
   ]
 }

@@ -524,6 +524,8 @@
             if (search(locations, query, true, (location) => location.aliases || [])) return
             // Then search localizations for perfect match
             if (search(locations, query, true, (location) => Object.values(location.localizations || {}))) return
+            // Then search alias localizations for perfect match
+            if (search(locations, query, true, (location) => Object.values(location.alias_localizations || {}).flat())) return
             // Then search label for inclusion
             if (search(locations, query, false, (location) => [location.label])) return
           }
