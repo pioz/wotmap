@@ -969,14 +969,8 @@ window.poi = {
         5624,
         3825
       ],
-      "label": "Aridhol"
-    },
-    {
-      "coord": [
-        5624,
-        3825
-      ],
-      "label": "Shadar Logoth"
+      "label": "Aridhol",
+      "aliases": ["Shadar Logoth"]
     },
     {
       "coord": [
@@ -1788,7 +1782,10 @@ window.poi = {
         7762,
         4074
       ],
-      "label": "New Braem"
+      "label": "New Braem",
+      "localizations": {
+        "it": "Nuova Bream"
+      }
     },
     {
       "coord": [

@@ -2,10 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover, user-scalable=no"
+    />
     <meta name="author" content="pioz" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json" />
     <title>The Wheel of Time Map</title>
     <style>
       :root {
@@ -416,46 +419,43 @@
           svg.style.height = h + 'px'
         }
 
-        function renderNationBorders(nations, {
-          strokeWidth = 6,
-          strokeOpacity = 0.85,
-          fill = true,
-          fillOpacity = 0.2,
-          defaultColor = 'rgb(255,0,0)'
-        } = {}) {
+        function renderNationBorders(
+          nations,
+          { strokeWidth = 6, strokeOpacity = 0.85, fill = true, fillOpacity = 0.2, defaultColor = 'rgb(255,0,0)' } = {}
+        ) {
           sizeSvgToImage(nationBordersSvg)
           // Clear previous content
-          while (nationBordersSvg.firstChild) nationBordersSvg.removeChild(nationBordersSvg.firstChild);
+          while (nationBordersSvg.firstChild) nationBordersSvg.removeChild(nationBordersSvg.firstChild)
 
-          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-          g.setAttribute('fill-rule', 'evenodd');
-          g.setAttribute('stroke-linejoin', 'round');
-          g.setAttribute('stroke-linecap', 'round');
-          g.setAttribute('stroke-miterlimit', '2');
+          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+          g.setAttribute('fill-rule', 'evenodd')
+          g.setAttribute('stroke-linejoin', 'round')
+          g.setAttribute('stroke-linecap', 'round')
+          g.setAttribute('stroke-miterlimit', '2')
 
           for (const nation of nations) {
-            if (typeof nation.border !== 'string' || !nation.border.trim()) continue;
-            const color = nation.color || defaultColor;
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', nation.border);
+            if (typeof nation.border !== 'string' || !nation.border.trim()) continue
+            const color = nation.color || defaultColor
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+            path.setAttribute('d', nation.border)
             // Stroke
-            path.setAttribute('stroke', color);
-            path.setAttribute('stroke-width', String(strokeWidth));
-            path.setAttribute('stroke-opacity', String(strokeOpacity));
+            path.setAttribute('stroke', color)
+            path.setAttribute('stroke-width', String(strokeWidth))
+            path.setAttribute('stroke-opacity', String(strokeOpacity))
             // Fill
             if (fill) {
-              path.setAttribute('fill', color);
-              path.setAttribute('fill-opacity', String(fillOpacity));
+              path.setAttribute('fill', color)
+              path.setAttribute('fill-opacity', String(fillOpacity))
             } else {
-              path.setAttribute('fill', 'none');
+              path.setAttribute('fill', 'none')
             }
-            g.appendChild(path);
+            g.appendChild(path)
           }
-          nationBordersSvg.appendChild(g);
+          nationBordersSvg.appendChild(g)
         }
 
         function setBordersVisible(visible) {
-          nationBordersSvg.style.display = visible ? 'block' : 'none';
+          nationBordersSvg.style.display = visible ? 'block' : 'none'
         }
 
         // Utils
@@ -471,6 +471,36 @@
           return Math.sqrt(dx * dx + dy * dy)
         }
 
+        function normalizeString(str) {
+          return str.trim().toLowerCase().replace(/\s+/g, '')
+        }
+
+        // Searches locations and recenters the view on the first match.
+        function search(locations, query, perfectMatch, valueExtractor) {
+          if (!Array.isArray(locations) || !query || typeof valueExtractor !== 'function') return false
+
+          for (const location of locations) {
+            // Drop falsy values
+            const values = valueExtractor(location).filter(Boolean)
+
+            // Check if any value matches according to the selected strategy
+            const hasMatch = values.some((v) => {
+              const nv = normalizeString(v)
+              return perfectMatch ? nv === query : nv.includes(query)
+            })
+
+            if (!hasMatch) continue
+
+            const [x, y] = location.coord
+            setCenterOnPoint(x, y)
+            applyTransform()
+            saveState()
+            return true
+          }
+
+          return false
+        }
+
         // Init
         ///////////////////////////////////////////////////////////////////////
 
@@ -484,30 +514,18 @@
 
         searchInput.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
-            const query = searchInput.value.trim().toLowerCase().replace(/\s+/g, '')
+            const query = normalizeString(searchInput.value)
             if (!query) return
             if (query.length < 3) return
             searchInput.blur()
             // First search for perfect match
-            for (const location of locations) {
-              if (location.label && location.label.toLowerCase().replace(/\s+/g, '') === query) {
-                const [x, y] = location.coord
-                setCenterOnPoint(x, y)
-                applyTransform()
-                saveState()
-                return
-              }
-            }
-            // Then by inclusion
-            for (const location of locations) {
-              if (location.label && location.label.toLowerCase().replace(/\s+/g, '').includes(query)) {
-                const [x, y] = location.coord
-                setCenterOnPoint(x, y)
-                applyTransform()
-                saveState()
-                return
-              }
-            }
+            if (search(locations, query, true, (location) => [location.label])) return
+            // Then search aliases for perfect match
+            if (search(locations, query, true, (location) => location.aliases || [])) return
+            // Then search localizations for perfect match
+            if (search(locations, query, true, (location) => Object.values(location.localizations || {}))) return
+            // Then search label for inclusion
+            if (search(locations, query, false, (location) => [location.label])) return
           }
         })
 
