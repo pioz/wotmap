@@ -142,12 +142,12 @@
       }
 
       #compass {
-        position: fixed;
+        position: absolute;
         width: 100px;
         height: 100px;
         bottom: 0;
         left: 0;
-        opacity: 0.7;
+        opacity: 0.8;
       }
     </style>
   </head>
@@ -244,7 +244,8 @@
             zoom,
             translateX,
             translateY,
-            showBorders
+            showBorders,
+            showCompass
           }
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
         }
@@ -258,6 +259,7 @@
             if (typeof state.translateX === 'number') translateX = state.translateX
             if (typeof state.translateY === 'number') translateY = state.translateY
             if (typeof state.showBorders === 'boolean') showBorders = state.showBorders
+            if (typeof state.showCompass === 'boolean') showCompass = state.showCompass
           } catch (e) {
             console.warn('Invalid saved state', e)
           }
@@ -408,7 +410,8 @@
 
         function toggleCompass() {
           showCompass = !showCompass
-          compass.style.visibility = showCompass ? 'visible' : 'hidden';
+          setCompassVisibile(showCompass)
+          saveState()
         }
 
         function mapLoaded() {
@@ -417,6 +420,7 @@
           }
           renderNationBorders(nations)
           setBordersVisible(showBorders)
+          setCompassVisibile(showCompass)
           applyTransform()
           loader.style.display = 'none'
         }
@@ -473,6 +477,10 @@
 
         function setBordersVisible(visible) {
           nationBordersSvg.style.display = visible ? 'block' : 'none'
+        }
+
+        function setCompassVisibile(visible) {
+          compass.style.visibility = visible ? 'visible' : 'hidden'
         }
 
         // Utils
