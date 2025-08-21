@@ -140,6 +140,15 @@
         -webkit-user-drag: none;
         display: block;
       }
+
+      #compass {
+        position: fixed;
+        width: 100px;
+        height: 100px;
+        bottom: 0;
+        left: 0;
+        opacity: 0.7;
+      }
     </style>
   </head>
 
@@ -166,6 +175,7 @@
           <img id="map" src="map.v1.jpg" alt="Map" fetchpriority="high" decoding="async" />
           <svg class="overlay" id="nation-borders-overlay"></svg>
         </div>
+        <img id="compass" src="compass.png" alt="Compass" />
       </div>
     </div>
 
@@ -188,6 +198,7 @@
         const viewport = document.getElementById('viewport')
         const content = document.getElementById('content')
         const img = document.getElementById('map')
+        const compass = document.getElementById('compass')
         const nationBordersSvg = document.getElementById('nation-borders-overlay')
         const loader = document.getElementById('loader')
 
@@ -205,6 +216,7 @@
         let translateX = 0 // pan X in pixels (screen space)
         let translateY = 0 // pan Y in pixels
         let showBorders = false // toggle state
+        let showCompass = true // toggle compass
 
         // Events
         ///////////////////////////////////////////////////////////////////////
@@ -394,6 +406,11 @@
           saveState()
         }
 
+        function toggleCompass() {
+          showCompass = !showCompass
+          compass.style.visibility = showCompass ? 'visible' : 'hidden';
+        }
+
         function mapLoaded() {
           if (!localStorage.getItem(STORAGE_KEY)) {
             setCenterOnPoint(EMONDS_FIELD_X, EMONDS_FIELD_Y, DEFAULT_ZOOM)
@@ -571,6 +588,7 @@
           if (e.key === '-' || e.key === 'ArrowDown') btnOut.click()
           if (e.key === '0') btnReset.click()
           if ((e.metaKey || e.ctrlKey) && e.key === 'b') btnBorders.click()
+          if ((e.metaKey || e.ctrlKey) && e.key === 'c') toggleCompass()
           if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
             e.preventDefault()
             searchInput.focus()
