@@ -97,7 +97,7 @@
         transition: transform 0.4s ease-in-out;
       }
 
-      .viewport.dragging .content {
+      .content.no-transition {
         transition: none;
       }
 
@@ -343,14 +343,13 @@
           } else if (e.touches.length === 2) {
             // PINCH ZOOM with two fingers
             isPinching = true
-            dragging = false // disable pan
+            setDragging(false) // disable pan
             lastTouchDistance = getTouchDistance(e.touches)
           }
         }
 
         function moveMapStart(x, y) {
-          dragging = true
-          viewport.classList.add('dragging')
+          setDragging(true)
           dragStartX = x
           dragStartY = y
           dragOriginX = translateX
@@ -388,8 +387,7 @@
         }
 
         function endDrag() {
-          dragging = false
-          viewport.classList.remove('dragging')
+          setDragging(false)
           saveState()
         }
 
@@ -418,6 +416,7 @@
         }
 
         function mapLoaded() {
+          content.classList.add('no-transition') // to avoid transform transition on
           if (!localStorage.getItem(STORAGE_KEY)) {
             setCenterOnPoint(EMONDS_FIELD_X, EMONDS_FIELD_Y, DEFAULT_ZOOM)
           }
@@ -425,7 +424,14 @@
           setBordersVisible(showBorders)
           setCompassVisibile(showCompass)
           applyTransform()
-          loader.style.display = 'none'
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setTimeout(() => {
+                content.classList.remove('no-transition')
+                loader.style.display = 'none'
+              }, 0)
+            })
+          })
         }
 
         // Nation Borders
@@ -491,6 +497,17 @@
 
         function clamp(value, min, max) {
           return Math.max(min, Math.min(max, value))
+        }
+
+        function setDragging(isDragging) {
+          dragging = isDragging
+          if (dragging) {
+            viewport.classList.add('dragging')
+            content.classList.add('no-transition')
+          } else {
+            viewport.classList.remove('dragging')
+            content.classList.remove('no-transition')
+          }
         }
 
         function getTouchDistance(touches) {
