@@ -79,6 +79,11 @@
         overflow: hidden;
         background: var(--dark-black);
         touch-action: none;
+        cursor: grab;
+      }
+
+      .viewport.dragging {
+        cursor: grabbing;
       }
 
       .content {
@@ -89,12 +94,10 @@
         border-radius: 25px;
         transform-origin: 0 0; /* We'll transform this element to pan & zoom */
         will-change: transform;
-        cursor: grab;
         transition: transform 0.4s ease-in-out;
       }
 
-      .content.dragging {
-        cursor: grabbing;
+      .viewport.dragging .content {
         transition: none;
       }
 
@@ -347,7 +350,7 @@
 
         function moveMapStart(x, y) {
           dragging = true
-          content.classList.add('dragging')
+          viewport.classList.add('dragging')
           dragStartX = x
           dragStartY = y
           dragOriginX = translateX
@@ -386,7 +389,7 @@
 
         function endDrag() {
           dragging = false
-          content.classList.remove('dragging')
+          viewport.classList.remove('dragging')
           saveState()
         }
 
