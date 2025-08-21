@@ -343,7 +343,7 @@
           } else if (e.touches.length === 2) {
             // PINCH ZOOM with two fingers
             isPinching = true
-            setDragging(false) // disable pan
+            dragging = false // disable pan
             lastTouchDistance = getTouchDistance(e.touches)
           }
         }
