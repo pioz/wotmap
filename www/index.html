@@ -126,12 +126,27 @@
         }
       }
 
+      .big-spin {
+        width: 48px;
+        height: 48px;
+        display: inline-block;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
       #loader {
         position: fixed;
         inset: 0;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 1rem;
         background: linear-gradient(var(--dark-black), var(--black));
         color: var(--white);
         font-size: 18px;
@@ -140,7 +155,13 @@
 
       #map {
         user-select: none;
-        -webkit-user-drag: none;
+        user-drag: none;
+        display: block;
+        line-height: 0; /* to remove gaps */
+      }
+
+      #map img {
+        position: absolute;
         display: block;
       }
 
@@ -156,7 +177,10 @@
   </head>
 
   <body>
-    <div id="loader">Loading map…</div>
+    <div id="loader">
+      <i data-lucide="loader-pinwheel" class="big-spin"></i>
+      Loading map…
+    </div>
 
     <div class="app">
       <div class="toolbar">
@@ -168,20 +192,22 @@
         <div class="hint">
           Scroll to zoom · Drag to pan
           <a class="hint" href="https://github.com/pioz/wotmap" target="_blank">
-            <img src="https://github.githubassets.com/favicons/favicon.png" alt="Contribute" height="28px" />
+            <i data-lucide="github"></i>
           </a>
         </div>
       </div>
 
       <div id="viewport" class="viewport">
         <div id="content" class="content">
-          <img id="map" src="map.v1.jpg" alt="Map" fetchpriority="high" decoding="async" />
+          <!-- <img id="map" src="map.v1.jpg" alt="Map" fetchpriority="high" /> -->
+          <div id="map"></div>
           <svg class="overlay" id="nation-borders-overlay"></svg>
         </div>
         <img id="compass" src="compass.png" alt="Compass" />
       </div>
     </div>
 
+    <script src="https://unpkg.com/lucide@latest" defer onload="lucide.createIcons()"></script>
     <script src="poi.js"></script>
     <script>
       ;(function () {
@@ -195,12 +221,20 @@
         const MAX_ZOOM = 2 // allow zooming in to 200%
         const DEFAULT_ZOOM = 0.8
 
+        const TILE_WIDTH = 494
+        const TILE_HEIGHT = 496
+        const TILES_COLS = 30
+        const TILES_ROWS = 16
+        const MAP_WIDTH = TILE_WIDTH * TILES_COLS
+        const MAP_HEIGHT = TILE_HEIGHT * TILES_ROWS
+        const TILES_DIR = 'tiles.v1'
+
         // Elements
         ///////////////////////////////////////////////////////////////////////
 
         const viewport = document.getElementById('viewport')
         const content = document.getElementById('content')
-        const img = document.getElementById('map')
+        const map = document.getElementById('map')
         const compass = document.getElementById('compass')
         const nationBordersSvg = document.getElementById('nation-borders-overlay')
         const loader = document.getElementById('loader')
@@ -231,6 +265,7 @@
         let dragOriginY = 0 // translateY at drag start
         let lastTouchDistance = 0
         let isPinching = false
+        let tilesLoadedCount = 0
 
         // POI (Points of Interesting)
         ///////////////////////////////////////////////////////////////////////
@@ -238,35 +273,6 @@
         const poi = window.poi
         const nations = poi.nations
         const locations = poi.locations.concat(poi.rivers).concat(poi.steddings)
-
-        // LocalStorage state
-        ///////////////////////////////////////////////////////////////////////
-
-        function saveState() {
-          const state = {
-            zoom,
-            translateX,
-            translateY,
-            showBorders,
-            showCompass
-          }
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-        }
-
-        function loadState() {
-          try {
-            const raw = localStorage.getItem(STORAGE_KEY)
-            if (!raw) return
-            const state = JSON.parse(raw)
-            if (typeof state.zoom === 'number') zoom = state.zoom
-            if (typeof state.translateX === 'number') translateX = state.translateX
-            if (typeof state.translateY === 'number') translateY = state.translateY
-            if (typeof state.showBorders === 'boolean') showBorders = state.showBorders
-            if (typeof state.showCompass === 'boolean') showCompass = state.showCompass
-          } catch (e) {
-            console.warn('Invalid saved state', e)
-          }
-        }
 
         // Render
         ///////////////////////////////////////////////////////////////////////
@@ -289,7 +295,7 @@
 
         // Center the image in the viewport
         function setCenterAtNaturalSize() {
-          setCenterOnPoint(img.naturalWidth / 2, img.naturalHeight / 2)
+          setCenterOnPoint(MAP_WIDTH / 2, MAP_HEIGHT / 2)
         }
 
         function zoomAt(pointX, pointY, deltaZoom) {
@@ -434,19 +440,80 @@
           })
         }
 
+        function tilesLoaded() {
+          tilesLoadedCount++
+          if (tilesLoadedCount === TILES_COLS * TILES_ROWS) {
+            mapLoaded()
+          }
+        }
+
+        function loadTiles() {
+          const frag = document.createDocumentFragment()
+
+          for (let row = 0; row < TILES_ROWS; row++) {
+            for (let col = 0; col < TILES_COLS; col++) {
+              const img = document.createElement('img')
+              img.src = `${TILES_DIR}/tile_${row}_${col}.jpg`
+              img.alt = `Map tile ${row},${col}`
+              img.style.left = `${col * TILE_WIDTH}px`
+              img.style.top = `${row * TILE_HEIGHT}px`
+              img.width = TILE_WIDTH
+              img.height = TILE_HEIGHT
+              img.addEventListener('dragstart', (e) => e.preventDefault())
+              if (img.complete) {
+                tilesLoaded()
+              } else {
+                img.addEventListener('load', tilesLoaded)
+              }
+              frag.appendChild(img)
+            }
+          }
+
+          map.style.width = `${TILE_WIDTH * TILES_COLS}px`
+          map.style.height = `${TILE_HEIGHT * TILES_ROWS}px`
+          map.appendChild(frag)
+        }
+
+        // LocalStorage state
+        ///////////////////////////////////////////////////////////////////////
+
+        function saveState() {
+          const state = {
+            zoom,
+            translateX,
+            translateY,
+            showBorders,
+            showCompass
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+        }
+
+        function loadState() {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY)
+            if (!raw) return
+            const state = JSON.parse(raw)
+            if (typeof state.zoom === 'number') zoom = state.zoom
+            if (typeof state.translateX === 'number') translateX = state.translateX
+            if (typeof state.translateY === 'number') translateY = state.translateY
+            if (typeof state.showBorders === 'boolean') showBorders = state.showBorders
+            if (typeof state.showCompass === 'boolean') showCompass = state.showCompass
+          } catch (e) {
+            console.warn('Invalid saved state', e)
+          }
+        }
+
         // Nation Borders
         ///////////////////////////////////////////////////////////////////////
 
         function sizeSvgToImage(svg) {
           // Set intrinsic size and viewBox to match the image's native pixels
-          const w = img.naturalWidth
-          const h = img.naturalHeight
-          svg.setAttribute('width', w)
-          svg.setAttribute('height', h)
-          svg.setAttribute('viewBox', `0 0 ${w} ${h}`)
+          svg.setAttribute('width', MAP_WIDTH)
+          svg.setAttribute('height', MAP_HEIGHT)
+          svg.setAttribute('viewBox', `0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`)
           // For layout: ensure the CSS box matches the image size so it overlaps perfectly
-          svg.style.width = w + 'px'
-          svg.style.height = h + 'px'
+          svg.style.width = MAP_WIDTH + 'px'
+          svg.style.height = MAP_HEIGHT + 'px'
         }
 
         function renderNationBorders(
@@ -570,7 +637,8 @@
             // Then search localizations for perfect match
             if (search(locations, query, true, (location) => Object.values(location.localizations || {}))) return
             // Then search alias localizations for perfect match
-            if (search(locations, query, true, (location) => Object.values(location.alias_localizations || {}).flat())) return
+            if (search(locations, query, true, (location) => Object.values(location.alias_localizations || {}).flat()))
+              return
             // Then search label for inclusion
             if (search(locations, query, false, (location) => [location.label])) return
           }
@@ -578,6 +646,20 @@
 
         searchInput.addEventListener('focus', (e) => {
           searchInput.value = ''
+        })
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+          if (e.key === '+' || e.key === 'ArrowUp') btnIn.click()
+          if (e.key === '-' || e.key === 'ArrowDown') btnOut.click()
+          if (e.key === '0') btnReset.click()
+          if ((e.metaKey || e.ctrlKey) && e.key === 'b') btnBorders.click()
+          if ((e.metaKey || e.ctrlKey) && e.key === 'c') toggleCompass()
+          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+            e.preventDefault()
+            searchInput.focus()
+            searchInput.value = ''
+          }
         })
 
         // Mouse events
@@ -596,33 +678,23 @@
         // Recenter on resize to keep the map nicely framed (preserve current zoom and center)
         window.addEventListener('resize', () => zoomAtViewportCenter(1))
 
-        // Prevent native image drag ghost
-        img.addEventListener('dragstart', (e) => e.preventDefault())
-
-        // Initialize after the image loads so we know natural dimensions
-        if (img.complete) {
-          mapLoaded()
-        } else {
-          img.addEventListener('load', mapLoaded)
-        }
-
-        img.addEventListener('error', () => {
-          alert('Fail to load the image map.')
-        })
-
-        // Keyboard shortcuts
-        window.addEventListener('keydown', (e) => {
-          if (e.key === '+' || e.key === 'ArrowUp') btnIn.click()
-          if (e.key === '-' || e.key === 'ArrowDown') btnOut.click()
-          if (e.key === '0') btnReset.click()
-          if ((e.metaKey || e.ctrlKey) && e.key === 'b') btnBorders.click()
-          if ((e.metaKey || e.ctrlKey) && e.key === 'c') toggleCompass()
-          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
-            e.preventDefault()
-            searchInput.focus()
-            searchInput.value = ''
+        // Start
+        if (map.tagName === 'IMG') {
+          // Prevent native image drag ghost
+          map.addEventListener('dragstart', (e) => e.preventDefault())
+          // Initialize after the image loads so we know natural dimensions
+          if (map.complete) {
+            mapLoaded()
+          } else {
+            map.addEventListener('load', mapLoaded)
           }
-        })
+
+          map.addEventListener('error', () => {
+            alert('Fail to load the image map.')
+          })
+        } else {
+          loadTiles()
+        }
       })()
     </script>
   </body>
