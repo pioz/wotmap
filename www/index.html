@@ -16,7 +16,7 @@
         --black: #0e1726;
         --ocean-blue: #4a7ecc;
         --dark-black: #020618;
-        --border-color: rgba(255, 255, 255, 0.12);
+        --gray: rgba(255, 255, 255, 0.12);
       }
 
       html,
@@ -46,13 +46,13 @@
         align-items: center;
         gap: 12px;
         background: var(--black);
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--gray);
         user-select: none;
       }
 
       .btn {
         padding: 6px 10px;
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--gray);
         border-radius: 8px;
         background: transparent;
         color: inherit;
@@ -68,7 +68,7 @@
         width: 0;
         max-width: 200px;
         padding: 6px 10px;
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--gray);
         border-radius: 8px;
         background: var(--black);
         color: var(--white);
@@ -90,7 +90,7 @@
         position: absolute;
         top: 0;
         left: 0;
-        border: 25px solid var(--border-color);
+        border: 25px solid var(--gray);
         border-radius: 25px;
         transform-origin: 0 0; /* We'll transform this element to pan & zoom */
         will-change: transform;
@@ -118,6 +118,13 @@
         margin-left: auto;
         opacity: 0.8;
         font-size: 12px;
+      }
+
+      .hint a:link,
+      .hint a:visited,
+      .hint a:hover,
+      .hint a:active {
+        color: var(--gray);
       }
 
       @media (max-width: 768px) {
