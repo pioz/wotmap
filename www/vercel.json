@@ -5,6 +5,12 @@
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=7776000, immutable" }
       ]
+    },
+    {
+      "source": "/tiles.v1/tile_(.*).jpg",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=7776000, immutable" }
+      ]
     }
   ]
 }
