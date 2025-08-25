@@ -14,10 +14,11 @@ fully navigable in the browser with pan, zoom, and text search.
 
 ## Keyboard Shortcuts
 
-* `+` or `ArrowUp` → Zoom In
-* `-` or `ArrowDown` → Zoom Out
-* `0` → Reset Zoom
-* `Ctrl/Cmd + B` → Toggle Borders
+* `+` or `ArrowUp` → Zoom in
+* `-` or `ArrowDown` → Zoom out
+* `0` → Reset zoom
+* `Ctrl/Cmd + B` → Toggle borders
+* `Ctrl/Cmd + C` → Toggle compass
 * `Ctrl/Cmd + F` → Focus search bar
 
 ## Contributing
