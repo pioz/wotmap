@@ -227,6 +227,8 @@
         const MIN_ZOOM = 0.1 // allow zooming out to 10%
         const MAX_ZOOM = 2 // allow zooming in to 200%
         const DEFAULT_ZOOM = 0.8
+        const MOVE_STEP = 250
+        const ZOOM_STEP = 1.2
 
         const TILE_WIDTH = 494
         const TILE_HEIGHT = 496
@@ -300,9 +302,38 @@
           translateY = vh / 2 - imgY * zoom
         }
 
-        // Center the image in the viewport
+        // Center the image in the viewport (not used)
         function setCenterAtNaturalSize() {
           setCenterOnPoint(MAP_WIDTH / 2, MAP_HEIGHT / 2)
+        }
+
+        function move(deltaX, deltaY) {
+          translateX += deltaX
+          translateY += deltaY
+          applyTransform()
+          saveState()
+        }
+
+        function moveUp(delta = MOVE_STEP) {
+          move(0, delta)
+        }
+
+        function moveRight(delta = MOVE_STEP) {
+          move(-delta, 0)
+        }
+
+        function moveDown(delta = MOVE_STEP) {
+          move(0, -delta)
+        }
+
+        function moveLeft(delta = MOVE_STEP) {
+          move(delta, 0)
+        }
+
+        function moveToEmondsField() {
+          setCenterOnPoint(EMONDS_FIELD_X, EMONDS_FIELD_Y, DEFAULT_ZOOM)
+          applyTransform()
+          saveState()
         }
 
         function zoomAt(pointX, pointY, deltaZoom) {
@@ -330,6 +361,14 @@
         // Reset zoom to default without re-centering the image
         function resetZoom() {
           zoomAtViewportCenter(DEFAULT_ZOOM / zoom)
+        }
+
+        function zoomIn(deltaZoom = ZOOM_STEP) {
+          zoomAtViewportCenter(deltaZoom)
+        }
+
+        function zoomOut(deltaZoom = ZOOM_STEP) {
+          zoomAtViewportCenter(1 / deltaZoom)
         }
 
         // Events
@@ -578,6 +617,7 @@
           if (dragging) {
             viewport.classList.add('dragging')
             content.classList.add('no-transition')
+            searchInput.value = '' // when dragging remove the input value
           } else {
             viewport.classList.remove('dragging')
             content.classList.remove('no-transition')
@@ -626,8 +666,8 @@
         loadState()
 
         // Toolbar events
-        btnIn.addEventListener('click', () => zoomAtViewportCenter(1.2))
-        btnOut.addEventListener('click', () => zoomAtViewportCenter(1 / 1.2))
+        btnIn.addEventListener('click', () => zoomIn())
+        btnOut.addEventListener('click', () => zoomOut())
         btnReset.addEventListener('click', resetZoom)
         btnBorders.addEventListener('click', toggleBorders)
 
@@ -652,21 +692,28 @@
         })
 
         searchInput.addEventListener('focus', (e) => {
-          searchInput.value = ''
+          searchInput.select()
         })
 
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {
-          if (e.key === '+' || e.key === 'ArrowUp') btnIn.click()
-          if (e.key === '-' || e.key === 'ArrowDown') btnOut.click()
-          if (e.key === '0') btnReset.click()
-          if ((e.metaKey || e.ctrlKey) && e.key === 'b') btnBorders.click()
-          if ((e.metaKey || e.ctrlKey) && e.key === 'c') toggleCompass()
-          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
-            e.preventDefault()
-            searchInput.focus()
-            searchInput.value = ''
-          }
+          if (document.activeElement === searchInput) return
+
+          if (e.key === '+' || e.key === '=') zoomIn()
+          if (e.key === '-') zoomOut()
+          if (e.key === 'ArrowUp')
+            if (e.shiftKey) zoomIn()
+            else moveUp()
+          if (e.key === 'ArrowRight') moveRight()
+          if (e.key === 'ArrowDown')
+            if (e.shiftKey) zoomOut()
+            else moveDown()
+          if (e.key === 'ArrowLeft') moveLeft()
+          if (e.key === '0' || e.key === 'r') resetZoom()
+          if (e.key === 'b') toggleBorders()
+          if (e.key === 'c') toggleCompass()
+          if (e.key === 'f') searchInput.focus()
+          if (e.key === 'e') moveToEmondsField()
         })
 
         // Mouse events

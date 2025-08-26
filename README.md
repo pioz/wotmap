@@ -1,6 +1,6 @@
 # The Wheel of Time Map
 
-An interactive map of *The Wheel of Time* universe, in plain Javascript and
+An interactive map of _The Wheel of Time_ universe, in plain Javascript and
 fully navigable in the browser with pan, zoom, and text search.
 
 ## Features
@@ -14,12 +14,17 @@ fully navigable in the browser with pan, zoom, and text search.
 
 ## Keyboard Shortcuts
 
-* `+` or `ArrowUp` → Zoom in
-* `-` or `ArrowDown` → Zoom out
-* `0` → Reset zoom
-* `Ctrl/Cmd + B` → Toggle borders
-* `Ctrl/Cmd + C` → Toggle compass
-* `Ctrl/Cmd + F` → Focus search bar
+- `ArrowUp` → Move up
+- `ArrowRight` → Move right
+- `ArrowDown` → Move down
+- `ArrowLeft` → Move left
+- `+` or `shift + ArrowUp` → Zoom in
+- `-` or `shift + ArrowDown` → Zoom out
+- `0` or `r` → Reset zoom
+- `b` → Toggle borders
+- `c` → Toggle compass
+- `f` → Focus search bar
+- `e` → Move to Emond's Field
 
 ## Contributing
 
