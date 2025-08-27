@@ -406,7 +406,6 @@
           dragStartY = y
           dragOriginX = translateX
           dragOriginY = translateY
-          applyTransform()
         }
 
         function duringDrag(e) {
@@ -699,6 +698,7 @@
         window.addEventListener('keydown', (e) => {
           if (document.activeElement === searchInput) return
 
+          e.preventDefault()
           if (e.key === '+' || e.key === '=') zoomIn()
           if (e.key === '-') zoomOut()
           if (e.key === 'ArrowUp')
