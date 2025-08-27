@@ -755,27 +755,40 @@
           searchInput.select()
         })
 
+        function keyPressed(event, key, { ctrlKey = false, altKey = false, metaKey = false, shiftKey = null } = {}) {
+          if (event.key !== key) return false
+
+          if (ctrlKey !== null && event.ctrlKey !== ctrlKey) return false
+          if (shiftKey !== null && event.shiftKey !== shiftKey) return false
+          if (altKey !== null && event.altKey !== altKey) return false
+          if (metaKey !== null && event.metaKey !== metaKey) return false
+
+          event.preventDefault()
+          return true
+        }
+
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {
           if (document.activeElement === searchInput) return
 
-          e.preventDefault()
-          if (e.key === '+' || e.key === '=') zoomIn()
-          if (e.key === '-') zoomOut()
-          if (e.key === 'ArrowUp')
-            if (e.shiftKey) zoomIn()
-            else moveUp()
-          if (e.key === 'ArrowRight') moveRight()
-          if (e.key === 'ArrowDown')
-            if (e.shiftKey) zoomOut()
-            else moveDown()
-          if (e.key === 'ArrowLeft') moveLeft()
-          if (e.key === '0' || e.key === 'r') resetZoom()
-          if (e.key === 'b') toggleBorders()
-          if (e.key === 'c') toggleCompass()
-          if (e.key === 'f') searchInput.focus()
-          if (e.key === 'e') moveToEmondsField()
-          if (e.key === 'h' || e.key === '?' || e.key === '/') showHelp()
+          if (keyPressed(e, '+')) zoomIn()
+          if (keyPressed(e, '=')) zoomIn()
+          if (keyPressed(e, '-')) zoomOut()
+          if (keyPressed(e, 'ArrowUp', { shiftKey: true })) zoomIn()
+          if (keyPressed(e, 'ArrowDown', { shiftKey: true })) zoomOut()
+          if (keyPressed(e, 'ArrowUp', { shiftKey: false })) moveUp()
+          if (keyPressed(e, 'ArrowRight', { shiftKey: false })) moveRight()
+          if (keyPressed(e, 'ArrowDown', { shiftKey: false })) moveDown()
+          if (keyPressed(e, 'ArrowLeft', { shiftKey: false })) moveLeft()
+          if (keyPressed(e, '0')) resetZoom()
+          if (keyPressed(e, 'r')) resetZoom()
+          if (keyPressed(e, 'b')) toggleBorders()
+          if (keyPressed(e, 'c')) toggleCompass()
+          if (keyPressed(e, 'f')) searchInput.focus()
+          if (keyPressed(e, 'e')) moveToEmondsField()
+          if (keyPressed(e, 'h')) showHelp()
+          if (keyPressed(e, '?')) showHelp()
+          if (keyPressed(e, '/')) showHelp()
         })
 
         // Mouse events
