@@ -1,0 +1,13 @@
+{
+  "icon": "www/wot_logo.png",
+  "output": "www",
+  "name": "WoT Map",
+  "short-name": "WoT Map",
+  "start-url": "/",
+  "theme-color": "#0e1726",
+  "background-color": "#0e1726",
+  "icon-background-color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "en"
+}
