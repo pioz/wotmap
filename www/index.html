@@ -10,6 +10,19 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <link rel="manifest" href="manifest.json" />
     <title>The Wheel of Time Map</title>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9EXXQ2CB06"></script>
+    <script>
+      window.dataLayer = window.dataLayer || []
+      function gtag() {
+        dataLayer.push(arguments)
+      }
+      gtag('js', new Date())
+
+      gtag('config', 'G-9EXXQ2CB06')
+    </script>
+
     <style>
       :root {
         --white: #e5e7eb;
@@ -124,7 +137,7 @@
       .hint a:visited,
       .hint a:hover,
       .hint a:active {
-        color: var(--gray);
+        color: inherit;
       }
 
       @media (max-width: 768px) {
@@ -197,8 +210,8 @@
         <button id="toggleBorders" class="btn" title="Toggle Nation Borders (ctrl+B)">Borders</button>
         <input class="input" id="searchInput" type="text" placeholder="Search…" />
         <div class="hint">
-          Scroll to zoom · Drag to pan
-          <a class="hint" href="https://github.com/pioz/wotmap" target="_blank">
+          <span> Scroll to zoom · Drag to pan · <a id="btnHelp" href="#">Help</a> </span>
+          <a href="https://github.com/pioz/wotmap" target="_blank">
             <i data-lucide="github"></i>
           </a>
         </div>
@@ -237,6 +250,23 @@
         const MAP_WIDTH = TILE_WIDTH * TILES_COLS
         const MAP_HEIGHT = TILE_HEIGHT * TILES_ROWS
         const TILES_DIR = 'tiles.v1'
+
+        const HELP = `
+          SHORTCUTS
+
+          [ArrowUp] → Move up
+          [ArrowRight] → Move right
+          [ArrowDown] → Move down
+          [ArrowLeft] → Move left
+          [+] or [shift + ArrowUp] → Zoom in
+          [-] or [shift + ArrowDown] → Zoom out
+          [0] or [r] → Reset zoom
+          [b] → Toggle borders
+          [c] → Toggle compass
+          [f] → Focus search bar
+          [e] → Move to Emond's Field
+          [h] → Show this help
+        `
 
         // Elements
         ///////////////////////////////////////////////////////////////////////
@@ -466,6 +496,11 @@
           saveState()
         }
 
+        function showHelp(e) {
+          if (e) e.preventDefault()
+          alert(HELP)
+        }
+
         function mapLoaded() {
           content.classList.add('no-transition') // to avoid transform transition on
           if (!localStorage.getItem(STORAGE_KEY)) {
@@ -669,6 +704,7 @@
         btnOut.addEventListener('click', () => zoomOut())
         btnReset.addEventListener('click', resetZoom)
         btnBorders.addEventListener('click', toggleBorders)
+        btnHelp.addEventListener('click', showHelp)
 
         searchInput.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
@@ -714,6 +750,7 @@
           if (e.key === 'c') toggleCompass()
           if (e.key === 'f') searchInput.focus()
           if (e.key === 'e') moveToEmondsField()
+          if (e.key === 'h' || e.key === '?' || e.key === '/') showHelp()
         })
 
         // Mouse events
