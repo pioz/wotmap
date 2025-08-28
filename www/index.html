@@ -769,7 +769,10 @@
 
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {
-          if (document.activeElement === searchInput) return
+          if (document.activeElement === searchInput) {
+            if (keyPressed(e, 'Escape')) searchInput.blur()
+            return
+          }
 
           if (keyPressed(e, '+')) zoomIn()
           if (keyPressed(e, '=')) zoomIn()
